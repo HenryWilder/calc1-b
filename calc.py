@@ -1,3 +1,55 @@
+from typing import Callable
+
+def is_number(ch: str):
+    return ch in "0123456789"
+
+def is_lower(ch: str):
+    return ch in "abcdefghijklmnopqrstuvwxyz"
+
+def is_upper(ch: str):
+    return ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def is_letter(ch: str):
+    return is_lower(ch) or is_upper(ch)
+
+class StringStream:
+    def __init__(self, src: str):
+        self._i = 0
+        self._src = src
+
+    def is_valid(self, n: int = 1) -> bool:
+        return self._i + n <= len(self._src)
+
+    def peek(self, n: int = 1) -> str | None:
+        if self.is_valid(n):
+            return self._src[self._i:self._i + n]
+
+    def is_eq(self, test: str) -> bool:
+        return self.peek(len(test)) == test
+
+    def is_in(self, test: str | list[str]) -> bool:
+        return any([self.is_eq(x) for x in test])
+
+    def skip(self, n: int = 1):
+        self._i += n
+
+    def skip_if_eq(self, test: str) -> bool:
+        if self.is_eq(test):
+            self.skip(len(test))
+            return True
+        return False
+
+    def take(self, n = 1) -> str:
+        result = self.peek(n)
+        self.skip(n)
+        return result
+
+    def take_while(self, pred: Callable[[str], bool]) -> str:
+        i = self._i
+        while self.is_valid() and pred(self.peek()): self.skip()
+        return self._src[i:self._i]
+
+
 class Expr:
     INT = "int"
     VAR = "var"
@@ -9,15 +61,15 @@ class Expr:
     DIV = "/"
     POW = "^"
 
-    def __init__(this, tag: str, data):
-        this.tag = tag
-        this.data = data
-    
-    def int(v: int):
-        return Expr(Expr.INT, v)
-    
-    def var(v: str):
-        return Expr(Expr.VAR, v)
+    def __init__(self, tag: str, data):
+        self.tag = tag
+        self.data: int | str | Expr | tuple[Expr, Expr] | list[Expr] | None = data
+
+    def int(value: int):
+        return Expr(Expr.INT, value)
+
+    def var(name: str):
+        return Expr(Expr.VAR, name)
 
     def inf():
         return Expr(Expr.INF, None)
@@ -25,170 +77,106 @@ class Expr:
     def dne():
         return Expr(Expr.DNE, None)
 
-    def __neg__(this):
-        return Expr(Expr.NEG, this)
+    def __neg__(self):
+        return Expr(Expr.NEG, self)
 
-    def __add__(this, other):
-        terms = []
-        for item in [this, other]:
-            assert isinstance(item, Expr)
-            if item.tag == Expr.ADD:
-                terms.extend(item.data)
-            else:
-                terms.append(item)
-        return Expr(Expr.ADD, terms)
+    def __add__(self, other: 'Expr'):
+        return Expr(Expr.ADD, [(x for x in item.data) if item.tag == Expr.ADD else item for item in list[Expr]([self, other])])
 
-    def __sub__(this, other):
-        return this + (-other)
+    def __sub__(self, other: 'Expr'):
+        return self + (-other)
 
-    def __mul__(this, other):
-        factors = []
-        for item in [this, other]:
-            assert isinstance(item, Expr)
-            if item.tag == Expr.MUL:
-                factors.extend(item.data)
-            else:
-                factors.append(item)
-        return Expr(Expr.MUL, factors)
+    def __mul__(self, other: 'Expr'):
+        return Expr(Expr.MUL, [(x for x in item.data) if item.tag == Expr.MUL else item for item in list[Expr]([self, other])])
 
-    def __div__(this, other):
-        return Expr(Expr.DIV, (this, other))
+    def __div__(self, other: 'Expr'):
+        return Expr(Expr.DIV, (self, other))
 
-    def __pow__(this, other):
-        return Expr(Expr.POW, (this, other))
+    def __pow__(self, other: 'Expr'):
+        return Expr(Expr.POW, (self, other))
 
-    def substitute(this, var: str, replacement):
-        if this.tag == Expr.VAR:
-            assert isinstance(this.data, str)
-            return replacement if this.data == var else this
-        if this.tag == Expr.INT or this.tag == Expr.DNE or this.tag == Expr.INF:
-            return this
-        elif this.tag == Expr.NEG:
-            assert isinstance(this.data, Expr)
-            inner = this.data
-            return -(inner.substitute(var, replacement))
-        elif this.tag == Expr.ADD:
-            assert type(this.data) is list[Expr]
-            terms = this.data
-            return Expr(Expr.ADD, [term.substitute(var, replacement) for term in terms])
-        elif this.tag == Expr.MUL:
-            assert type(this.data) is list[Expr]
-            terms = this.data
-            return Expr(Expr.MUL, [term.substitute(var, replacement) for term in terms])
-        elif this.tag == Expr.DIV:
-            assert type(this.data) is tuple[Expr, Expr]
-            (p, q) = this.data
-            return p.substitute(var, replacement) / q.substitute(var, replacement)
-        elif this.tag == Expr.POW:
-            assert type(this.data) is tuple[Expr, Expr]
-            (b, p) = this.data
-            return b.substitute(var, replacement) ** p.substitute(var, replacement)
+    def substitute(self, var: str, replacement: 'Expr'):
+        if self.tag == Expr.VAR and self.data == var:
+            return replacement
+        elif self.tag in [Expr.VAR, Expr.INT, Expr.DNE, Expr.INF]:
+            return self
+        elif self.tag == Expr.NEG:
+            assert type(self.data) is Expr
+            return -(self.data.substitute(var, replacement))
+        elif self.tag in [Expr.ADD, Expr.MUL]:
+            assert type(self.data) is list[Expr]
+            return Expr(self.tag, [item.substitute(var, replacement) for item in self.data])
+        elif self.tag == Expr.DIV:
+            assert type(self.data) is tuple[Expr, Expr]
+            return Expr(self.tag, tuple(item.substitute(var, replacement) for item in self.data))
         else:
-            raise ValueError("Unknown tag: {}".format(this.tag))
+            raise ValueError("Unknown tag: {}".format(self.tag))
 
-    def parse(text: str):
+    def _tokenize(stream: StringStream):
         tokens: list[Expr] = []
-        i = 0
-        while i < len(text):
-            ch = text[i]
-            if ch == ' ':
+        while stream.is_valid():
+            if stream.skip_if_eq(' '):
                 pass
-            elif ch == '(' or ch == '[':
-                tokens.append(Expr.parse(text[i:]))
-            elif ch == ')' or ch == ']':
+            elif stream.skip_if_eq('('):
+                sub_tokens = Expr._tokenize(stream)
+                tokens.append(sub_tokens) # todo
+            elif stream.is_eq(')'):
                 break
-            elif ch in "+-*/^":
-                if ch in "+-/^":
-                    op = ch
-                elif ch == '*':
-                    assert i + 1 < len(text), "'*' should never be the end of an expression"
-                    if text[i + 1] == '*':
-                        op = '^'
-                        i += 1
-                    else:
-                        op = '*'
-                if op == '+':
-                    tag = Expr.ADD
-                elif op == '-':
-                    tag = Expr.NEG
-                elif op == '*':
-                    tag = Expr.MUL
-                elif op == '/':
-                    tag = Expr.DIV
-                elif op == '^':
-                    tag = Expr.POW
-                tokens.append(Expr(tag, None))
-            elif ch in "0123456789":
-                start = i
-                while i < len(text) and text[i] in "0123456789":
-                    i += 1
-                tokens.append(Expr(Expr.INT, int(text[start:i])))
-            elif i + 2 < len(text) and text[i:i+2] == "inf":
+            elif stream.skip_if_eq("**") or stream.skip_if_eq("^"):
+                tokens.append(Expr(Expr.POW, None))
+            elif stream.skip_if_eq('*'):
+                tokens.append(Expr(Expr.MUL, None))
+            elif stream.skip_if_eq('+'):
+                tokens.append(Expr(Expr.ADD, None))
+            elif stream.skip_if_eq('-'):
+                tokens.append(Expr(Expr.NEG, None))
+            elif stream.skip_if_eq('/'):
+                tokens.append(Expr(Expr.DIV, None))
+            elif stream.skip_if_eq("inf"):
                 tokens.append(Expr.inf())
-                i += 2
-            elif i + 2 < len(text) and text[i:i+2] == "dne":
+            elif stream.skip_if_eq("dne"):
                 tokens.append(Expr.dne())
-                i += 2
-            else:
-                v = ch
-                if i + 1 < len(text) and text[i + 1] == '_':
+            elif is_number(stream.peek()):
+                tokens.append(Expr(Expr.INT, int(stream.take_while(is_number))))
+            elif is_letter(stream.peek()):
+                v = stream.take()
+                if stream.skip_if_eq('_'):
                     v += '_'
-                    i += 1
-                    if text[i + 1] == '{':
-                        i += 2 # skip {}
-                        while text[i] != '}':
-                            v += text[i]
-                            i += 1
-                            assert i < len(text)
-                while i + 1 < len(text) and text[i + 1] == '\'':
-                    v += '\''
-                    i += 1
+                    if stream.skip_if_eq('{'):
+                        v += stream.take_while(lambda ch: ch != '}')
+                        stream.skip() # }
+                    else:
+                        v += stream.take()
+                v += stream.take_while(lambda ch: ch == '\'')
                 tokens.append(Expr(Expr.VAR, v))
-            i += 1
+        return tokens
 
-        print(", ".join([str(token) for token in tokens]))
+    def parse(text: str) -> 'Expr':
+        tokens = Expr._tokenize(StringStream(text))
+        return tokens[0]
 
-        i = len(tokens) - 1
-        while i >= 0:
-            tkn = tokens[i]
-            if tkn.tag == Expr.NEG and tkn.data is None:
-                if tokens[i + 1].tag is 
-                i = len(tokens) - 1
-            i -= 1
+    def _debug_tokens(tokens: list['Expr']):
+        return ", ".join(["'{}'[{}]".format(token.tag, token.data) for token in tokens])
 
-        print(", ".join([str(token) for token in tokens]))
-        # assert len(tokens) == 1
-        # return tokens[0]
-
-    def debug_str(this):
-        if type(this.data) is Expr:
-            data_debug = this.data.debug_str()
-        elif type(this.data) is list[Expr]:
-            data_debug = ", ".join([item.debug_str() for item in this.data])
-        elif type(this.data) is tuple[Expr, Expr]:
-            (a, b) = this.data
-            data_debug = a.debug_str() + ", " + b.debug_str()
-        return "'{}'[{}]".format(this.tag, data_debug)
-    
-    def __str__(this):
-        if this.tag == Expr.INT:
-            return str(this.data)
-        elif this.tag == Expr.VAR:
-            return this.data
-        elif this.tag == Expr.INF:
+    def __str__(self):
+        if self.tag == Expr.INT:
+            return str(self.data)
+        elif self.tag == Expr.VAR:
+            return self.data
+        elif self.tag == Expr.INF:
             return "∞"
-        elif this.tag == Expr.DNE:
+        elif self.tag == Expr.DNE:
             return "DNE"
-        elif this.tag == Expr.NEG:
-            return "(-{})".format(this.data)
-        elif this.tag == Expr.ADD or this.tag == Expr.MUL:
-            separator = ("+" if this.tag == Expr.ADD else "*")
-            return "({})".format(separator.join([str(item) for item in this.data]))
-        elif this.tag == Expr.DIV or this.tag == Expr.POW:
-            separator = ("/" if this.tag == Expr.DIV else "^")
-            (a, b) = this.data
+        elif self.tag == Expr.NEG:
+            return "(-{})".format(self.data)
+        elif self.tag == Expr.ADD or self.tag == Expr.MUL:
+            separator = ('+' if self.tag == Expr.ADD else '*')
+            return "({})".format(separator.join([str(item) for item in self.data]))
+        elif self.tag == Expr.DIV or self.tag == Expr.POW:
+            separator = ('/' if self.tag == Expr.DIV else '^')
+            (a, b) = self.data
             return "({}{}{})".format(a, separator, b)
         else:
-            return "[err: '{}' not recognized]".format(this.tag)
+            return "[err: '{}' not recognized]".format(self.tag)
 
-Expr.parse("29932*x_{99}'+633")
+print(Expr.parse("29932*x_{99}'+633"))
