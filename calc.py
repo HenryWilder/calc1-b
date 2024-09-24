@@ -58,33 +58,17 @@ class TokenQueue:
 
     def group(
         self, *,
-        where:           list[Callable[['Expr'], bool]],
-        following:       list[Callable[['Expr'], bool]] = [],
-        followed_by:     list[Callable[['Expr'], bool]] = [],
+        where: list[Callable[['Expr'], bool]],
         by: Callable[..., 'Expr'],
     ):
         start = 0
-        NUM_FOLLOWING   = len(following)
-        NUM_CAPTURE     = len(where)
-        NUM_FOLLOWED_BY = len(followed_by)
-        NUM_TESTED = NUM_FOLLOWING + NUM_CAPTURE + NUM_FOLLOWED_BY
-        while start + NUM_TESTED < len(self.tokens):
-            prev_end = start    + NUM_FOLLOWING
-            curr_end = prev_end + NUM_CAPTURE
-            next_end = curr_end + NUM_FOLLOWED_BY
-            prev = self.tokens[start:prev_end]
-            curr = self.tokens[prev_end:curr_end]
-            next = self.tokens[curr_end:next_end]
-            preds = [*zip(prev, following), *zip(curr, where), *zip(next, followed_by)]
-            conds = [pred(token) for (token, pred) in preds]
+        NUM_CAPTURE = len(where)
+        while start + NUM_CAPTURE <= len(self.tokens):
+            curr_end = start + NUM_CAPTURE
+            curr = self.tokens[start:curr_end]
+            conds = [pred(token) for (token, pred) in zip(curr, where)]
             if all(conds):
-                pre = self.tokens[:prev_end]
-                assert type(pre) is list
-                post = self.tokens[curr_end:]
-                assert type(post) is list
-                replacement = by(*curr)
-                assert type(replacement) is list
-                self.tokens = [*pre, replacement, *post]
+                self.tokens = [*self.tokens[:start], by(*curr), *self.tokens[curr_end:]]
                 start = 0
             else:
                 start += 1
@@ -196,34 +180,30 @@ class Expr:
 
     def parse(text: str) -> 'Expr':
         tokens = TokenQueue(Expr._tokenize(StringStream(text)))
-
         tokens.group(
             where=[
                 lambda lhs: True,
                 lambda op: op.tag == Expr.POW and op.data is None,
                 lambda rhs: True,
             ],
-            by=lambda lhs, op, rhs: [lhs ** rhs],
+            by=lambda lhs, op, rhs: lhs ** rhs,
         )
-
         tokens.group(
             where=[
                 lambda lhs: True,
                 lambda op: (op.tag == Expr.MUL or op.tag == Expr.DIV) and op.data is None,
                 lambda rhs: True,
             ],
-            by=lambda lhs, op, rhs: [lhs * rhs if op.tag == Expr.MUL else lhs / rhs],
+            by=lambda lhs, op, rhs: lhs * rhs if op.tag == Expr.MUL else lhs / rhs,
         )
-
         tokens.group(
             where=[
                 lambda lhs: True,
                 lambda op: op.tag == Expr.ADD and op.data is None,
                 lambda rhs: True,
             ],
-            by=lambda lhs, op, rhs: [lhs * rhs],
+            by=lambda lhs, op, rhs: lhs + rhs,
         )
-
         return tokens[0]
 
     def _debug_tokens(tokens: list['Expr']):
