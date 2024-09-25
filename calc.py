@@ -1,3 +1,3 @@
-from expr import Expr
+from expr import *
 
-print(Expr.parse("29932*(-x_{99}')^3-633"))
+print((Int(2) + Int(5) ** Int(3) - Int(6) * (Int(3) / Int(4))).try_evaluate())

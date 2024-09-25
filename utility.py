@@ -9,3 +9,11 @@ def is_upper(ch: str):
 
 def is_letter(ch: str):
     return is_lower(ch) or is_upper(ch)
+
+def is_prime(n: int):
+    if n <= 0 or n % 2 == 0:
+        return False
+    for m in range(3, n, 2):
+        if n % m == 0:
+            return False
+    return True
