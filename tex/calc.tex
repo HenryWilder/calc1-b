@@ -1,0 +1,405 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Define Article %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{report}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Using Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{empheq}
+\usepackage{mdframed}
+\usepackage{booktabs}
+\usepackage{lipsum}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{psfrag}
+\usepackage{pgfplots}
+\usepackage{bm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+\DeclareRobustCommand{\lnor}{
+    \mathbin{\overline{\vee}}
+}
+\DeclareRobustCommand{\lxnor}{
+    \mathbin{\underline{\wedge}}
+}
+\makeatother
+
+\def\undefined{\mathrm{undefined}}
+\def\dne{\mathrm{DNE}}
+
+\def\lnand{\barwedge}
+\def\lxor{\veebar}
+\def\true{1} % \top or 1
+\def\false{0} % \bot or 0
+
+% Options:
+% - leibniz
+% - lagrange
+% - euler
+\newcommand{\CalcNotation}{lagrange}
+
+% \deriv<n>[of]{with respect to}{for the expression}[with the argument(s)]
+\NewDocumentCommand{\deriv}{D<>{1}O{}mmO{}}{
+    \ifdefstring{\CalcNotation}{leibniz}{
+        % Leibniz
+        \ifnumequal{#1}{1}{
+            \frac{d#2}{d{#3}}{#4#5}
+        }{
+            \frac{d^{#1}#2}{d{#3}^{#1}}{#4#5}
+        }
+    }{\ifdefstring{\CalcNotation}{lagrange}{
+        % Lagrange (prime)
+        \ifnumequal{#1}{1}{
+            {#4}'{#5}
+        }{\ifnumequal{#1}{2}{
+            {#4}''{#5}
+        }{
+            {#4}^{(#1)}{#5}
+        }}
+    }{\ifdefstring{\CalcNotation}{euler}{
+        % Euler
+        \ifnumequal{#1}{1}{
+            D_{#3}{#4}{#5}
+        }{
+            D^{#1}_{#3}{#4}{#5}
+        }
+    }{
+        \errmessage{I don't know how to represent ``\CalcNotation'' notation.}
+    }}}
+}
+
+% \integ<n>{with respect to}{for the expression}
+\NewDocumentCommand{\integ}{D<>{1}mm}{
+    \ifdefstring{\CalcNotation}{leibniz}{
+        % Leibniz
+        \ifnumequal{#1}{1}{
+            \int
+        }{\ifnumequal{#1}{2}{
+            \iint
+        }{\ifnumequal{#1}{3}{
+            \iiint
+        }{\ifnumequal{#1}{4}{
+            \iiiint
+        }{
+            \errmessage{Integral order too high, I dont know how to represent #1-order integrals in Leibniz notation.}
+        }}}}{#3}\:{d#2}
+    }{\ifdefstring{\CalcNotation}{lagrange}{
+        % Lagrange (prime)
+        {#3}^{(-#1)}
+    }{\ifdefstring{\CalcNotation}{euler}{
+        % Euler
+        D^{-#1}_{#2}{#3}
+    }{
+        \errmessage{I don't know how to represent ``\CalcNotation'' notation.}
+    }}}
+}
+
+\def\const#1{{\color[HTML]{4fc1ff}#1}}
+\def\fn#1{{\color[HTML]{dcdcaa}#1}}
+\def\var#1{{\color[HTML]{9cdcfe}#1}}
+\def\type#1{{\color[HTML]{4ec9b0}#1}}
+\def\lit#1{{\color[HTML]{b5cea8}#1}}
+\def\keyword#1{{\color[HTML]{569cd6}#1}}
+\def\op#1{\mathbin{\color[HTML]{569cd6}#1}}
+\def\stmt#1{\mathrel{\color[HTML]{c586c0}#1}}
+\def\aside#1{\mathrlap{\qquad\color[HTML]{6a9955}#1}}
+\def\brA#1{{\color[HTML]{ffd700}#1}}
+\def\brB#1{{\color[HTML]{da70d6}#1}}
+\def\brC#1{{\color[HTML]{179fff}#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Page Setting %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\geometry{a4paper}
+\pagecolor[RGB]{31,31,31}
+% \pagecolor[RGB]{0,0,0}
+\color[HTML]{cccccc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Define some useful colors %%%%%%%%%%%%%%%%%%%%%%%%%%
+\definecolor{ocre}{RGB}{243,102,25}
+\definecolor{mygray}{RGB}{243,243,244}
+\definecolor{deepGreen}{RGB}{26,111,0}
+\definecolor{shallowGreen}{RGB}{235,255,255}
+\definecolor{deepBlue}{RGB}{61,124,222}
+\definecolor{shallowBlue}{RGB}{235,249,255}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Define an orangebox command %%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\orangebox[1]{\fcolorbox{ocre}{mygray}{\hspace{1em}#1\hspace{1em}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% English Environments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newtheoremstyle{mytheoremstyle}{3pt}{3pt}{\normalfont}{0cm}{\rmfamily\bfseries}{}{1em}{{\color{black}\thmname{#1}~\thmnumber{#2}}\thmnote{\,--\,#3}}
+\newtheoremstyle{myproblemstyle}{3pt}{3pt}{\normalfont}{0cm}{\rmfamily\bfseries}{}{1em}{{\color{black}\thmname{#1}~\thmnumber{#2}}\thmnote{\,--\,#3}}
+\theoremstyle{mytheoremstyle}
+\newmdtheoremenv[linewidth=1pt,backgroundcolor=shallowGreen,linecolor=deepGreen,leftmargin=0pt,innerleftmargin=20pt,innerrightmargin=20pt,]{theorem}{Theorem}[section]
+\theoremstyle{mytheoremstyle}
+\newmdtheoremenv[linewidth=1pt,backgroundcolor=shallowBlue,linecolor=deepBlue,leftmargin=0pt,innerleftmargin=20pt,innerrightmargin=20pt,]{definition}{Definition}[section]
+\theoremstyle{myproblemstyle}
+\newmdtheoremenv[linecolor=black,leftmargin=0pt,innerleftmargin=10pt,innerrightmargin=10pt,]{problem}{Problem}[section]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Plotting Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepgfplotslibrary{colorbrewer}
+\pgfplotsset{width=8cm,compat=1.9}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Math Properties}
+\author{Amy Wilder}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+    \maketitle
+
+    \chapter{Properties}
+    Assume the following:
+    \def\a{\var{a}}
+    \def\b{\var{b}}
+    \def\c{\var{c}}
+    \def\e{\const{e}}
+    \def\f{\fn{f}}
+    \def\g{\fn{g}}
+    \def\h{\const{h}}
+    \def\k{\const{k}}
+    \def\n{\var{n}}
+    \def\m{\var{m}}
+    \def\x{\var{x}}
+    \def\y{\keyword{y}}
+    \def\N{\type{\mathbb{N}}}
+    \def\R{\type{\mathbb{R}}}
+    \begin{itemize}
+        \item \(\h,\k\) are constants
+        \item \(\var{\theta},\var{\phi},\var{\psi}\) are angles (the golden ratio is \(\const{\varphi}\))
+        \item \(\a,\b,\c,\x \in \R\)
+        \item \(\y\) is defined in terms of \(\var{x}\)
+        \item \(\f\) and \(\g\) are functions
+        \item \(\n,\m \in \N\)
+    \end{itemize}
+
+    \section{Reflexive}
+    \begin{gather}
+        \x \stmt= \x \\
+        \a \stmt< \b \stmt{\iff} \b \stmt> \a
+    \end{gather}
+
+    \section{Mutation}
+    \begin{align}
+        \x \op+ \lit{1} &\stmt> \x \\
+        \x \op- \lit{1} &\stmt< \x \\
+        \op{|\x \op\cdot \lit{2}|} &\stmt> \x
+    \end{align}
+
+    \section{Positivity}
+    \begin{align}
+        \op{|\x|} &\stmt\ge \lit{0} \\
+        \x^{\lit{2} \op\cdot \n} &\stmt\ge \lit{0}
+    \end{align}
+
+    \section{Identity}
+    \begin{align}
+        \x \op+ \lit{0} &\stmt= \x \\
+        \x \op- \lit{0} &\stmt= \x \\
+        \x \op\cdot \lit{1} &\stmt= \x \\
+        \op{\frac{\x}{\lit{1}}} &\stmt= \x \\
+        \x^\lit{1} &\stmt= \x \\
+        \fn{\deriv{\x}{\brA{(\e^\x)}}} &\stmt= \e^\x
+    \end{align}
+
+    \section{Fixed Point}
+    \begin{align}
+        \x \op\cdot \lit{0} &\stmt= \lit{0} \\
+        \x^\lit{0} &\stmt= \lit{1} \\
+        \fn{\log_\x \lit{1}} &\stmt= \lit{0}
+    \end{align}
+
+    \section{Self-Destructive}
+    \begin{align}
+        \x \op- \x &\stmt= \lit{0} \\
+        \op{\frac{\x}{\x}} &\stmt= \lit{1} \aside{\iff \x \stmt\ne \lit{0}} \\
+        \fn{\log_\x \x} &\stmt= \lit{1} \\
+        \fn{\ln \e} &\stmt= \lit{1}
+    \end{align}
+
+    \section{Commutative}
+    \begin{align}
+        \a \op+ \b &\stmt= \b \op+ \a \\
+        \a \op\cdot \b &\stmt= \b \op\cdot \a
+    \end{align}
+
+    \section{Associative}
+    \begin{align}
+        \brA{(\a \op+ \b)} \op+ \c &\stmt= \a \op+ \brA{(\b \op+ \c)} \\
+        \brA{(\a \op\cdot \b)} \op\cdot \c &\stmt= \a \op\cdot \brA{(\b \op\cdot \c)}
+    \end{align}
+
+    \section{Distributive}
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    \chapter{Operations}
+
+    \section{Arithmetic}
+    \begin{align}
+        a + b &= b + a \label{eq:commut-add} \\
+        a \cdot b &= b \cdot a \label{eq:commut-mult} \\
+        (a + b) + c &= a + (b + c) = a + b + c \label{eq:assoc-add} \\
+        (a \cdot b) \cdot c &= a \cdot (b \cdot c) = a \cdot b \cdot c \label{eq:assoc-mul} \\
+        a \cdot (b + c) &= a \cdot b + a \cdot c \label{distrib-mul} \\
+        \frac{a + b}{c} &= \frac{a}{c} + \frac{b}{c} \label{distrib-div}
+    \end{align}
+
+    \subsection{Logarithms}
+    \begin{align*}
+        \log_a b = y &\iff a^y = b \\
+        \log x &= \log_{10} x \\
+        \ln x &= \log_{e} x \\
+    \end{align*}
+    \begin{align}
+        \log_n\left( a \cdot b \right) &= \log_n a + \log_n b \\
+        \log_n\left( \frac{a}{b} \right) &= \log_n a - \log_n b \\
+        \log_n\left( a^b \right) &= b \cdot \log_n a\\
+        \log_n 1 &= 0
+    \end{align}
+
+    \subsubsection{Natural}
+    \begin{align}
+        \ln\left( a \cdot b \right) &= \ln a + \ln b \\
+        \ln\left( \frac{a}{b} \right) &= \ln a - \ln b \\
+        \ln\left( a^b \right) &= b\ln a \\
+        \ln e &= 1
+    \end{align}
+
+    \section{Boolean}
+    \subsection{Definitions}
+    \begin{align*}
+        \lnot  &= \text{NOT}  \\
+        \land  &= \text{AND}  \\
+        \lnand &= \text{NAND} \\
+        \lor   &= \text{OR}   \\
+        \lnor  &= \text{NOR}  \\
+        \lxor  &= \text{XOR}  \\
+        \lxnor &= \text{XNOR}
+    \end{align*}
+    \subsection{Using only NOT and OR}
+    \begin{align}
+        a \lor b &= a \lor b \\
+        a \lnor b &= \lnot(a \lor b) \\
+        a \land b &= \lnot(\lnot a \lor \lnot b) \\
+        a \lnand b &= \lnot a \lor \lnot b \\
+        a \lxor b &= \lnot(\lnot (a \lor b) \lor \lnot(\lnot a \lor \lnot b)) \\
+        a \lxnor b &= \lnot(a \lor b) \lor \lnot (\lnot a \lor \lnot b)
+    \end{align}
+    \subsection{Commutative}
+    \begin{align}
+        a \lor b &= b \lor a \\
+        a \lnor b &= b \lnor a \\
+        a \land b &= b \land a \\
+        a \lnand b &= b \lnand a \\
+        a \lxor b &= b \lxor a \\
+        a \lxnor b &= b \lxnor a \\
+    \end{align}
+    \subsection{Associative}
+    \begin{align}
+        (a \land b) \land c &= a \land (b \land c) = a \land b \land c \\
+        (a \lor b) \lor c &= a \lor (b \lor c) = a \lor b \lor c \\
+    \end{align}
+    \begin{align}
+        % negation
+        \lnot(\lnot x) &= x \\
+        \lnot(a \land b) &= (\lnot a \lor \lnot b) \\
+        \lnot(a \lor b) &= (\lnot a \land \lnot b) \\
+        (a \land b) \lor (a \land c) &= a \land (b \lor c) \\
+        (a \lor b) \land (a \lor c) &= a \lor (b \land c) \\
+        x \land x &= x \\
+        x \lor x &= x \\
+        x \land \true &= x \\
+        x \lor \false &= x \\
+        x \land \false &= \false \\
+        x \lor \true &= \true
+    \end{align}
+
+    \section{Trig}
+    \subsection{Definitions}
+    \begin{align}
+        \sin\theta &= \frac{y}{r} = \frac{1}{\csc\theta} \\
+        \cos\theta &= \frac{x}{r} = \frac{1}{\sec\theta} \\
+        \tan\theta &= \frac{y}{x} = \frac{1}{\cot\theta} = \frac{\sin\theta}{\cos\theta} \\
+        \csc\theta &= \frac{r}{y} = \frac{1}{\sin\theta} \\
+        \sec\theta &= \frac{r}{x} = \frac{1}{\cos\theta} \\
+        \cot\theta &= \frac{x}{y} = \frac{1}{\tan\theta} = \frac{\cos\theta}{\sin\theta}
+    \end{align}
+    \subsection{Pythagorean}
+    \begin{align}
+        \cos^2\theta+\sin^2\theta &= 1 \\
+        \sin^2\theta &= 1 - \cos^2 \theta \\
+        \sin\theta &= \pm\sqrt{1 - \cos^2 \theta} \\
+        \cos^2\theta &= 1 - \sin^2 \theta \\
+        \cos\theta &= \pm\sqrt{1 - \sin^2 \theta} \\
+    \end{align}
+    \subsection{Angle Sum and Difference}
+    \begin{align}
+        \sin(\alpha \pm \beta) &= \sin\alpha\cdot\cos\beta \pm \cos\alpha\cdot\sin\beta \\
+        \cos(\alpha \pm \beta) &= \cos\alpha\cdot\cos\beta \mp \sin\alpha\cdot\sin\beta \\
+        \tan(\alpha \pm \beta) &= \frac{\tan\alpha \pm \tan\beta}{1 \mp \tan\alpha\cdot\tan\beta} \\
+        \sin(2\theta) &= 2\sin\theta\cdot\cos\theta \\
+        \cos(2\theta) &= \cos^2\theta - \sin^2\theta \\
+        \tan(2\theta) &= \frac{2\tan\theta}{1 - \tan^2\theta}
+    \end{align}
+
+    \section{Limits}
+    Let \(c\) be a constant and \(n \in \mathbb{N}\)
+    then
+    \begin{align}
+        \lim_{x \to a}c &= c \\
+        \lim_{x \to a}x &= a \\
+        \lim_{x \to a}f(x) &= f(a) \\
+        \lim_{x \to a}\bigl(f(x) + g(x)\bigr) &= \lim_{x \to a} f(x) + \lim_{x \to a} g(x) \\
+        \lim_{x \to a}\bigl(f(x) - g(x)\bigr) &= \lim_{x \to a} f(x) - \lim_{x \to a} g(x) \\
+        \lim_{x \to a}\bigl(c \cdot f(x)\bigr) &= c \cdot \lim_{x \to a} f(x) \\
+        \lim_{x \to a}\bigl(f(x) \cdot g(x)\bigr) &= \lim_{x \to a} f(x) \cdot \lim_{x \to a} g(x) \\
+        \lim_{x \to a}\left(\frac{f(x)}{g(x)}\right) &= \frac{\displaystyle\lim_{x \to a} f(x)}{\displaystyle\lim_{x \to a} g(x)} \iff \lim_{x \to a} g(x) \ne 0 \\
+        \lim_{x \to a}{\bigl(f(x)\bigr)}^n &= {\left(\lim_{x \to a} f(x)\right)}^n \\
+        \lim_{x \to a}\sqrt[n]{f(x)} &= \sqrt[n]{\lim_{x \to a} f(x)}
+    \end{align}
+
+    \section{Derivatives}
+    Let \(c\) be a constant, \(f\) and \(g\) be functions, \(n \in \mathbb{R}\), and \(y\) be defined in terms of \(x\).
+    Then,
+    \begin{align}
+        \deriv{x}{c} &= 0 \\
+        \deriv{x}{x} &= 1 \\ % 1x^0
+        \deriv{x}{\left(c \cdot f(x)\right)} &= c \cdot \deriv{x}{f}[(x)] \\
+        \deriv{x}{\left(f(x) \pm g(x)\right)} &= \deriv{x}{f}[(x)] \pm \deriv{x}{g}[(x)] \\
+        \deriv{x}{\left(f(x) \cdot g(x)\right)} &= \deriv{x}{f}[(x)] \cdot g(x) + f(x) \cdot \deriv{x}{g}[(x)] \\
+        \deriv{x}{\left(\frac{f(x)}{g(x)}\right)} &= \frac{\deriv{x}{f}[(x)] \cdot g(x) - f(x) \cdot \deriv{x}{g}[(x)]}{g^2(x)} \\
+        \deriv{x}{\left(x^n\right)} &= n \cdot x^{n-1} \\
+        \deriv{x}{\left(n^x\right)} &= n^x \cdot \ln n \\
+        \deriv{x}{\left(e^x\right)} &= e^x \\
+        \deriv{x}{\left(\log_n x\right)} &= \frac{1}{x \cdot \ln n} \\
+        \deriv{x}{\left(\ln x\right)} &= \frac{1}{x} \\
+        \deriv{x}{\left(f \circ g\right)}(x) &= (\deriv{x}{f} \circ g)(x) \cdot \deriv{x}{g}[(x)] \label{chain} \\
+        \deriv{x}{\left(y^2\right)} &= 2y \cdot \deriv{x}{y} \label{implicit}
+    \end{align}
+    \subsection{Derivatives of Trig Functions}
+    \begin{align}
+        \deriv{\theta}{\sin}[\theta] &= \cos \theta \\
+        \deriv{\theta}{\cos}[\theta] &= -\sin \theta \\
+        \deriv{\theta}{\tan}[\theta] &= \sec^2 \theta \\
+        \deriv{\theta}{\csc}[\theta] &= -\csc(\theta) \cdot \cot(\theta) \\
+        \deriv{\theta}{\sec}[\theta] &= \sec(\theta) \cdot \tan(\theta) \\
+        \deriv{\theta}{\cot}[\theta] &= -\csc^2 \theta \\
+        \deriv{\theta}{\arcsin}[\theta] &= \frac{1}{\sqrt{1-\theta^2}} \\
+        \deriv{\theta}{\arccos}[\theta] &= \frac{-1}{\sqrt{1-\theta^2}} \\
+        \deriv{\theta}{\arctan}[\theta] &= \frac{1}{1+\theta^2}
+    \end{align}
+
+    \section{Integration}
+    \begin{align}
+    \end{align}
+
+    \chapter{Proofs}
+    
+\end{document}
