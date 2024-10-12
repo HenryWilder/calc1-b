@@ -44,29 +44,29 @@
 \newcommand{\CalcNotation}{lagrange}
 
 % \deriv<n>[of]{with respect to}{for the expression}[with the argument(s)]
-\NewDocumentCommand{\deriv}{D<>{1}O{}mmO{}}{
+\NewDocumentCommand{\deriv}{D<>{1}O{}mmo}{
     \ifdefstring{\CalcNotation}{leibniz}{
         % Leibniz
         \ifnumequal{#1}{1}{
-            \frac{d#2}{d{#3}}{#4#5}
+            \fn{\frac{d#2}{d{#3}}}{#4\IfNoValueF{#5}{\br({#5})}}
         }{
-            \frac{d^{#1}#2}{d{#3}^{#1}}{#4#5}
+            \fn{\frac{d^{#1}#2}{d{#3}^{#1}}}{#4\IfNoValueF{#5}{\br({#5})}}
         }
     }{\ifdefstring{\CalcNotation}{lagrange}{
         % Lagrange (prime)
         \ifnumequal{#1}{1}{
-            {#4}'{#5}
+            {#4}^{\fn{\prime}}{\IfNoValueF{#5}{\br({#5})}}
         }{\ifnumequal{#1}{2}{
-            {#4}''{#5}
+            {#4}^{\fn{\prime\prime}}{\IfNoValueF{#5}{\br({#5})}}
         }{
-            {#4}^{(#1)}{#5}
+            {#4}^{\fn{(#1)}}{\IfNoValueF{#5}{\br({#5})}}
         }}
     }{\ifdefstring{\CalcNotation}{euler}{
         % Euler
         \ifnumequal{#1}{1}{
-            D_{#3}{#4}{#5}
+            \fn{D_{#3}}{#4}{\IfNoValueF{#5}{\br({#5})}}
         }{
-            D^{#1}_{#3}{#4}{#5}
+            \fn{D^{#1}_{#3}}{#4}{\IfNoValueF{#5}{\br({#5})}}
         }
     }{
         \errmessage{I don't know how to represent ``\CalcNotation'' notation.}
@@ -120,9 +120,6 @@
 \def\op#1{\mathbin{\color[HTML]{569cd6}#1}}
 \def\stmt#1{\mathrel{\color[HTML]{c586c0}#1}}
 \def\aside#1{\mathrlap{\qquad\color[HTML]{6a9955}#1}}
-\def\brA#1{{\color[HTML]{ffd700}#1}}
-\def\brB#1{{\color[HTML]{da70d6}#1}}
-\def\brC#1{{\color[HTML]{179fff}#1}}
 \def\ghost#1{{\transparent{0.34}\color{white}#1}}
 
 % \newcommand{\ShowHints}{}
@@ -136,7 +133,7 @@
 }
 \NewDocumentCommand{\var}{d<>m}{\IfNoValueTF{#1}{\Var{#2}}{\hint{\;\in\type{#1}}{\Var{#2}}}}
 \NewDocumentCommand{\const}{d<>m}{\IfNoValueTF{#1}{\Const{#2}}{\hint{\;\in\type{#1}}{\Const{#2}}}}
-\NewDocumentCommand{\fn}{d<>m}{\IfNoValueTF{#1}{\Fn{#2}}{\hint{\to\type{#1}}{\Fn{#2}}}}
+\NewDocumentCommand{\fn}{d<>mo}{\IfNoValueTF{#1}{\Fn{#2}}{\hint{\to\type{#1}}{\Fn{#2}}}\IfNoValueF{#3}{\br({#3})}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% Page Setting %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \geometry{a4paper}
@@ -219,7 +216,7 @@
         \var{x} \op\cdot \lit{1} &\stmt= \var{x} \\
         \op{\frac{\var{x}}{\lit{1}}} &\stmt= \var{x} \\
         \var{x}^\lit{1} &\stmt= \var{x} \\
-        \fn{\deriv{\var{x}}{\brA{(\lit{e}^{\var{x}})}}} &\stmt= \lit{e}^{\var{x}}
+        \deriv{\var{x}}{\br({\lit{e}^{\var{x}}})} &\stmt= \lit{e}^{\var{x}}
     \end{align}
 
     \section{Fixed Point}
@@ -245,8 +242,8 @@
 
     \section{Associative}
     \begin{align}
-        \brA{(\var{a} \op+ \var{b})} \op+ \var{c} &\stmt= \var{a} \op+ \brA{(\var{b} \op+ \var{c})} \\
-        \brA{(\var{a} \op\cdot \var{b})} \op\cdot \var{c} &\stmt= \var{a} \op\cdot \brA{(\var{b} \op\cdot \var{c})}
+        \br({\var{a} \op+ \var{b}}) \op+ \var{c} &\stmt= \var{a} \op+ \br({\var{b} \op+ \var{c}}) \\
+        \br({\var{a} \op\cdot \var{b}}) \op\cdot \var{c} &\stmt= \var{a} \op\cdot \br({\var{b} \op\cdot \var{c}})
     \end{align}
 
     \section{Distributive}
@@ -364,83 +361,117 @@
     \end{align}
 
     \section{Limits}
-    Let \(c\) be a constant and \(n \in \mathbb{N}\)
+    Let \(\const{c}\) be a constant and \(\var<\N>{n} \in \N\)
     then
     \begin{align}
-        \lim_{x \to a}c &= c \\
-        \lim_{x \to a}x &= a \\
-        \lim_{x \to a}f(x) &= f(a) \\
-        \lim_{x \to a}\bigl(f(x) + g(x)\bigr) &= \lim_{x \to a} f(x) + \lim_{x \to a} g(x) \\
-        \lim_{x \to a}\bigl(f(x) - g(x)\bigr) &= \lim_{x \to a} f(x) - \lim_{x \to a} g(x) \\
-        \lim_{x \to a}\bigl(c \cdot f(x)\bigr) &= c \cdot \lim_{x \to a} f(x) \\
-        \lim_{x \to a}\bigl(f(x) \cdot g(x)\bigr) &= \lim_{x \to a} f(x) \cdot \lim_{x \to a} g(x) \\
-        \lim_{x \to a}\left(\frac{f(x)}{g(x)}\right) &= \frac{\displaystyle\lim_{x \to a} f(x)}{\displaystyle\lim_{x \to a} g(x)} \iff \lim_{x \to a} g(x) \ne 0 \\
-        \lim_{x \to a}{\bigl(f(x)\bigr)}^n &= {\left(\lim_{x \to a} f(x)\right)}^n \\
-        \lim_{x \to a}\sqrt[n]{f(x)} &= \sqrt[n]{\lim_{x \to a} f(x)}
+        \fn{\lim_{\var{x} \to \var{a}}} \const{c}
+            &\stmt=
+            \const{c}
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}} \var{x}
+            &\stmt=
+            \var{a}
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}} \fn{f}[\var{x}]
+            &\stmt=
+            \fn{f}[\var{a}]
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}}[\fn{f}[\var{x}] \op+ \fn{g}[\var{x}]]
+            &\stmt=
+            \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}] \op+ \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}}[\fn{f}[\var{x}] \op- \fn{g}[\var{x}]]
+            &\stmt=
+            \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}] \op- \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}}[\const{c} \op\cdot \fn{f}[\var{x}]]
+            &\stmt=
+            \const{c} \op\cdot \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}]
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}}[\fn{f}[\var{x}] \op\cdot \fn{g}[\var{x}]]
+            &\stmt=
+            \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}] \op\cdot \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}} \br({\frac{\fn{f}[\var{x}]}{\fn{g}[\var{x}]}})
+            &\stmt=
+            \frac{\displaystyle\lim_{\var{x} \to \var{a}} \fn{f}[\var{x}]}{\displaystyle\lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]}
+            \stmt\iff
+            \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
+            \stmt\ne
+            \lit{0}
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}} {\br({\fn{f}[\var{x}]})}^{\var{n}}
+            &\stmt=
+            {\br({\fn{\lim_{\var{x} \to \var{a}}} \fn{f}[\var{x}]})}^{\var{n}}
+        \\[1ex]
+        \fn{\lim_{\var{x} \to \var{a}}} \fn{\sqrt[\var<\N>{n}]{\fn{f}[\var{x}]}}
+            &\stmt=
+            \fn{\sqrt[\var<\N>{n}]{\fn{\lim_{\var{x} \to \var{a}}} \fn{f}[\var{x}]}}
     \end{align}
 
     \section{Derivatives}
     % Let \(c\) be a constant, \(f\) and \(g\) be functions, \(n \in \mathbb{R}\), and \(y\) be defined in terms of \(x\).
     % Then,
     \begin{align}
-        \fn{\deriv{\var{x}}{\const{c}}}
+        \deriv{\var{x}}{\const{c}}
             &\stmt=
             \lit{0}
-        \\
-        \fn{\deriv{\var{x}}{\var{x}}}
+        \\[1ex]
+        \deriv{\var{x}}{\var{x}}
             &\stmt=
             \lit{1}
-        \\ % 1x^0
-        \fn{\deriv{\var{x}}{\br({\const{c} \op\cdot \fn{f}\br({\var{x}})})}}
+        \\[1ex] % 1x^0
+        \deriv{\var{x}}{\br({\const{c} \op\cdot \fn{f}[\var{x}]})}
             &\stmt=
-            \const{c} \op\cdot \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]}
-        \\
-        \fn{\deriv{\var{x}}{\br({\fn{f}\br({\var{x}}) \op\pm \fn{g}\br({\var{x}})})}}
+            \const{c} \op\cdot \deriv{\var{x}}{\fn{f}}[\var{x}]
+        \\[1ex]
+        \deriv{\var{x}}{\br({\fn{f}[\var{x}] \op\pm \fn{g}[\var{x}]})}
             &\stmt=
-            \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]} \op\pm \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
-        \\
-        \fn{\deriv{\var{x}}{\br({\fn{f}\br({\var{x}}) \op\cdot \fn{g}\br({\var{x}})})}}
+            \deriv{\var{x}}{\fn{f}}[\var{x}] \op\pm \deriv{\var{x}}{\fn{g}}[\var{x}]
+        \\[1ex]
+        \deriv{\var{x}}{\br({\fn{f}[\var{x}] \op\cdot \fn{g}[\var{x}]})}
             &\stmt=
-            \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]} \op\cdot \fn{g}\br({\var{x}}) \op+ \fn{f}\br({\var{x}}) \op\cdot \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
-        \\
-        \fn{\deriv{\var{x}}{\br({\op{\frac{\fn{f}\br({\var{x}})}{\fn{g}\br({\var{x}})}}})}}
+            \deriv{\var{x}}{\fn{f}}[\var{x}] \op\cdot \fn{g}[\var{x}] \op+ \fn{f}[\var{x}] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
+        \\[1ex]
+        \deriv{\var{x}}{\br({\op{\frac{\fn{f}[\var{x}]}{\fn{g}[\var{x}]}}})}
             &\stmt=
             \op{\frac{
-                \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]} \op\cdot \fn{g}\br({\var{x}}) \op- \fn{f}\br({\var{x}}) \op\cdot \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
+                \deriv{\var{x}}{\fn{f}}[\var{x}] \op\cdot \fn{g}[\var{x}] \op- \fn{f}[\var{x}] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
             }{
-                \fn{g}^\lit{2}\br({\var{x}})
+                \fn{g^\lit{2}}[\var{x}]
             }}
-        \\
-        \fn{\deriv{\var{x}}{\br({\var{x}^{\var<\N>{n}}})}}
+        \\[1ex]
+        \deriv{\var{x}}{\br({\var{x}^{\var<\N>{n}}})}
             &\stmt=
             \var<\N>{n} \op\cdot \var{x}^{\var<\N>{n} \op- \lit{1}}
-        \\
-        \fn{\deriv{\var{x}}{\br({\var<\N>{n}^{\var{x}}})}}
+        \\[1ex]
+        \deriv{\var{x}}{\br({\var<\N>{n}^{\var{x}}})}
             &\stmt=
-            \var<\N>{n}^{\var{x}} \op\cdot \fn{\ln\br({\var<\N>{n}})}
-        \\
-        \fn{\deriv{\var{x}}{\br({\lit{e}^{\var{x}}})}}
+            \var<\N>{n}^{\var{x}} \op\cdot \fn{\ln}[\var<\N>{n}]
+        \\[1ex]
+        \deriv{\var{x}}{\br({\lit{e}^{\var{x}}})}
             &\stmt=
             \lit{e}^{\var{x}}
-        \\
-        \fn{\deriv{\var{x}}{\fn{\log_{\var<\N>{n}}}}[\br({\var{x}})]}
+        \\[1ex]
+        \deriv{\var{x}}{\fn{\log_{\var<\N>{n}}}}[\var{x}]
             &\stmt=
-            \op{\frac{\lit{1}}{\var{x} \op\cdot \fn{\ln\br({\var<\N>{n}})}}}
-        \\
-        \fn{\deriv{\var{x}}{{\fn{\ln}}}[\br({\var{x}})]}
+            \op{\frac{\lit{1}}{\var{x} \op\cdot \fn{\ln}[\var<\N>{n}]}}
+        \\[1ex]
+        \deriv{\var{x}}{{\fn{\ln}}}[\var{x}]
             &\stmt=
             \op{\frac{\lit{1}}{\var{x}}}
-        \\
-        \fn{\deriv{\var{x}}{\br({\fn{f} \op\circ \fn{g}})}\br({\var{x}})}
+        \\[1ex]
+        \label{chain}
+        \deriv{\var{x}}{\br({\fn{f} \op\circ \fn{g}})}[\var{x}]
             &\stmt=
-            \br({\fn{\deriv{\var{x}}{\fn{f}}} \op\circ \fn{g}})\br({\var{x}}) \op\cdot \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
-            \label{chain}
-        \\
-        \fn{\deriv{\var{x}}{\br({\var{y}^\lit{2}})}}
+            \fn{\br({\deriv{\var{x}}{\fn{f}} \op\circ \fn{g}})}[\var{x}] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
+        \\[1ex]
+        \label{implicit}
+        \deriv{\var{x}}{\br({\var{y}^\lit{2}})}
             &\stmt=
-            \lit{2} \op\cdot \var{y} \op\cdot \fn{\deriv{\var{x}}{\var{y}}} \label{implicit}
-    \end{align}
-    \subsection{Derivatives of Trig Functions}
+            \lit{2} \op\cdot \var{y} \op\cdot \deriv{\var{x}}{\var{y}}
+        \end{align}
+        \subsection{Derivatives of Trig Functions}
     \begin{align}
         \deriv{\theta}{\sin}[\theta]
             &\stmt=
