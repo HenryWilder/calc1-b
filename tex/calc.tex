@@ -14,6 +14,7 @@
 \usepackage{lipsum}
 \usepackage{graphicx}
 \usepackage{color}
+\usepackage{transparent}
 \usepackage{psfrag}
 \usepackage{pgfplots}
 \usepackage{bm}
@@ -98,9 +99,21 @@
     }}}
 }
 
-\def\const#1{{\color[HTML]{4fc1ff}#1}}
-\def\fn#1{{\color[HTML]{dcdcaa}#1}}
-\def\var#1{{\color[HTML]{9cdcfe}#1}}
+\newcounter{brDepth}
+\NewDocumentCommand{\br}{mmm}{
+    \stepcounter{brDepth}
+    \ifnumequal{\value{brDepth}}{4}{\setcounter{brDepth}{1}}{}
+    {\color[HTML]{\ifnumequal{\value{brDepth}}{1}{ffd700}{\ifnumequal{\value{brDepth}}{2}{da70d6}{\ifnumequal{\value{brDepth}}{3}{179fff}{\errmessage{unreachable}}}}}\left#1{\color[HTML]{cccccc}#2}\right#3}
+    \addtocounter{brDepth}{-1}
+    \ifnumequal{\value{brDepth}}{0}{\setcounter{brDepth}{3}}{}
+}
+
+\def\R{\type{\mathbb{R}}}
+\def\N{\type{\mathbb{N}}}
+\def\Z{\type{\mathbb{Z}}}
+\def\Const#1{{\color[HTML]{4fc1ff}#1}}
+\def\Var#1{{\color[HTML]{9cdcfe}#1}}
+\def\Fn#1{{\color[HTML]{dcdcaa}#1}}
 \def\type#1{{\color[HTML]{4ec9b0}#1}}
 \def\lit#1{{\color[HTML]{b5cea8}#1}}
 \def\keyword#1{{\color[HTML]{569cd6}#1}}
@@ -110,6 +123,20 @@
 \def\brA#1{{\color[HTML]{ffd700}#1}}
 \def\brB#1{{\color[HTML]{da70d6}#1}}
 \def\brC#1{{\color[HTML]{179fff}#1}}
+\def\ghost#1{{\transparent{0.34}\color{white}#1}}
+
+% \newcommand{\ShowHints}{}
+
+\def\hint#1#2{
+    \ifdef{\ShowHints}{
+        #2 {\ghost{\scalebox{0.4}{\ensuremath{#1}}}}
+    }{
+        #2
+    }
+}
+\NewDocumentCommand{\var}{d<>m}{\IfNoValueTF{#1}{\Var{#2}}{\hint{\;\in\type{#1}}{\Var{#2}}}}
+\NewDocumentCommand{\const}{d<>m}{\IfNoValueTF{#1}{\Const{#2}}{\hint{\;\in\type{#1}}{\Const{#2}}}}
+\NewDocumentCommand{\fn}{d<>m}{\IfNoValueTF{#1}{\Fn{#2}}{\hint{\to\type{#1}}{\Fn{#2}}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% Page Setting %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \geometry{a4paper}
@@ -155,84 +182,71 @@
     \maketitle
 
     \chapter{Properties}
+
     Assume the following:
-    \def\a{\var{a}}
-    \def\b{\var{b}}
-    \def\c{\var{c}}
-    \def\e{\const{e}}
-    \def\f{\fn{f}}
-    \def\g{\fn{g}}
-    \def\h{\const{h}}
-    \def\k{\const{k}}
-    \def\n{\var{n}}
-    \def\m{\var{m}}
-    \def\x{\var{x}}
-    \def\y{\keyword{y}}
-    \def\N{\type{\mathbb{N}}}
-    \def\R{\type{\mathbb{R}}}
     \begin{itemize}
-        \item \(\h,\k\) are constants
-        \item \(\var{\theta},\var{\phi},\var{\psi}\) are angles (the golden ratio is \(\const{\varphi}\))
-        \item \(\a,\b,\c,\x \in \R\)
-        \item \(\y\) is defined in terms of \(\var{x}\)
-        \item \(\f\) and \(\g\) are functions
-        \item \(\n,\m \in \N\)
+        \item \(\const{h},\const{k}\) are constants
+        \item \(\var{\theta},\var{\phi},\var{\psi}\) are angles (the golden ratio is \(\lit{\varphi}\))
+        \item \(\var{a},\var{b},\var{c},\var{x} \in \R\)
+        \item \(\var{y}\) is defined in terms of \(\var{x}\)
+        \item \(\fn{f}\) and \(\fn{g}\) are functions
+        \item \(\var<\N>{n},\var<\N>{m} \in \N\)
     \end{itemize}
 
     \section{Reflexive}
     \begin{gather}
-        \x \stmt= \x \\
-        \a \stmt< \b \stmt{\iff} \b \stmt> \a
+        \var{x} \stmt= \var{x} \\
+        \var{a} \stmt< \var{b} \stmt{\iff} \var{b} \stmt> \var{a}
     \end{gather}
 
     \section{Mutation}
     \begin{align}
-        \x \op+ \lit{1} &\stmt> \x \\
-        \x \op- \lit{1} &\stmt< \x \\
-        \op{|\x \op\cdot \lit{2}|} &\stmt> \x
+        \var{x} \op+ \lit{1} &\stmt> \var{x} \\
+        \var{x} \op- \lit{1} &\stmt< \var{x} \\
+        \op{ |\var{x} \op\cdot \lit{2}| } &\stmt> \var{x}
     \end{align}
 
     \section{Positivity}
     \begin{align}
-        \op{|\x|} &\stmt\ge \lit{0} \\
-        \x^{\lit{2} \op\cdot \n} &\stmt\ge \lit{0}
+        \op{ |\var{x}| } &\stmt\ge \lit{0} \\
+        \var{x}^{\lit{2} \op\cdot \var<\N>{n}} &\stmt\ge \lit{0}
     \end{align}
 
     \section{Identity}
     \begin{align}
-        \x \op+ \lit{0} &\stmt= \x \\
-        \x \op- \lit{0} &\stmt= \x \\
-        \x \op\cdot \lit{1} &\stmt= \x \\
-        \op{\frac{\x}{\lit{1}}} &\stmt= \x \\
-        \x^\lit{1} &\stmt= \x \\
-        \fn{\deriv{\x}{\brA{(\e^\x)}}} &\stmt= \e^\x
+        \var{x} \op+ \lit{0} &\stmt= \var{x} \\
+        \var{x} \op- \lit{0} &\stmt= \var{x} \\
+        \var{x} \op\cdot \lit{1} &\stmt= \var{x} \\
+        \op{\frac{\var{x}}{\lit{1}}} &\stmt= \var{x} \\
+        \var{x}^\lit{1} &\stmt= \var{x} \\
+        \fn{\deriv{\var{x}}{\brA{(\lit{e}^{\var{x}})}}} &\stmt= \lit{e}^{\var{x}}
     \end{align}
 
     \section{Fixed Point}
     \begin{align}
-        \x \op\cdot \lit{0} &\stmt= \lit{0} \\
-        \x^\lit{0} &\stmt= \lit{1} \\
-        \fn{\log_\x \lit{1}} &\stmt= \lit{0}
+        \var{x} \op\cdot \lit{0} &\stmt= \lit{0} \\
+        {\var{x}}^\lit{0} &\stmt= \lit{1} \\
+        \fn{\log_{\var{x}} \lit{1}} &\stmt= \lit{0}
     \end{align}
 
     \section{Self-Destructive}
     \begin{align}
-        \x \op- \x &\stmt= \lit{0} \\
-        \op{\frac{\x}{\x}} &\stmt= \lit{1} \aside{\iff \x \stmt\ne \lit{0}} \\
-        \fn{\log_\x \x} &\stmt= \lit{1} \\
-        \fn{\ln \e} &\stmt= \lit{1}
+        \var{x} \op- \var{x} &\stmt= \lit{0} \\
+        \op{\frac{\var{x}}{\var{x}}} &\stmt= \lit{1} \aside{\iff \var{x} \stmt\ne \lit{0}} \\
+        \fn{\log_{\var{x}} \var{x}} &\stmt= \lit{1} \\
+        \fn{\ln \lit{e}} &\stmt= \lit{1}
     \end{align}
 
     \section{Commutative}
     \begin{align}
-        \a \op+ \b &\stmt= \b \op+ \a \\
-        \a \op\cdot \b &\stmt= \b \op\cdot \a
+        \var{a} \op+ \var{b} &\stmt= \var{b} \op+ \var{a} \\
+        \var{a} \op\cdot \var{b} &\stmt= \var{b} \op\cdot \var{a}
     \end{align}
 
     \section{Associative}
     \begin{align}
-        \brA{(\a \op+ \b)} \op+ \c &\stmt= \a \op+ \brA{(\b \op+ \c)} \\
-        \brA{(\a \op\cdot \b)} \op\cdot \c &\stmt= \a \op\cdot \brA{(\b \op\cdot \c)}
+        \brA{(\var{a} \op+ \var{b})} \op+ \var{c} &\stmt= \var{a} \op+ \brA{(\var{b} \op+ \var{c})} \\
+        \brA{(\var{a} \op\cdot \var{b})} \op\cdot \var{c} &\stmt= \var{a} \op\cdot \brA{(\var{b} \op\cdot \var{c})}
     \end{align}
 
     \section{Distributive}
@@ -366,34 +380,103 @@
     \end{align}
 
     \section{Derivatives}
-    Let \(c\) be a constant, \(f\) and \(g\) be functions, \(n \in \mathbb{R}\), and \(y\) be defined in terms of \(x\).
-    Then,
+    % Let \(c\) be a constant, \(f\) and \(g\) be functions, \(n \in \mathbb{R}\), and \(y\) be defined in terms of \(x\).
+    % Then,
     \begin{align}
-        \deriv{x}{c} &= 0 \\
-        \deriv{x}{x} &= 1 \\ % 1x^0
-        \deriv{x}{\left(c \cdot f(x)\right)} &= c \cdot \deriv{x}{f}[(x)] \\
-        \deriv{x}{\left(f(x) \pm g(x)\right)} &= \deriv{x}{f}[(x)] \pm \deriv{x}{g}[(x)] \\
-        \deriv{x}{\left(f(x) \cdot g(x)\right)} &= \deriv{x}{f}[(x)] \cdot g(x) + f(x) \cdot \deriv{x}{g}[(x)] \\
-        \deriv{x}{\left(\frac{f(x)}{g(x)}\right)} &= \frac{\deriv{x}{f}[(x)] \cdot g(x) - f(x) \cdot \deriv{x}{g}[(x)]}{g^2(x)} \\
-        \deriv{x}{\left(x^n\right)} &= n \cdot x^{n-1} \\
-        \deriv{x}{\left(n^x\right)} &= n^x \cdot \ln n \\
-        \deriv{x}{\left(e^x\right)} &= e^x \\
-        \deriv{x}{\left(\log_n x\right)} &= \frac{1}{x \cdot \ln n} \\
-        \deriv{x}{\left(\ln x\right)} &= \frac{1}{x} \\
-        \deriv{x}{\left(f \circ g\right)}(x) &= (\deriv{x}{f} \circ g)(x) \cdot \deriv{x}{g}[(x)] \label{chain} \\
-        \deriv{x}{\left(y^2\right)} &= 2y \cdot \deriv{x}{y} \label{implicit}
+        \fn{\deriv{\var{x}}{\const{c}}}
+            &\stmt=
+            \lit{0}
+        \\
+        \fn{\deriv{\var{x}}{\var{x}}}
+            &\stmt=
+            \lit{1}
+        \\ % 1x^0
+        \fn{\deriv{\var{x}}{\br({\const{c} \op\cdot \fn{f}\br({\var{x}})})}}
+            &\stmt=
+            \const{c} \op\cdot \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]}
+        \\
+        \fn{\deriv{\var{x}}{\br({\fn{f}\br({\var{x}}) \op\pm \fn{g}\br({\var{x}})})}}
+            &\stmt=
+            \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]} \op\pm \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
+        \\
+        \fn{\deriv{\var{x}}{\br({\fn{f}\br({\var{x}}) \op\cdot \fn{g}\br({\var{x}})})}}
+            &\stmt=
+            \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]} \op\cdot \fn{g}\br({\var{x}}) \op+ \fn{f}\br({\var{x}}) \op\cdot \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
+        \\
+        \fn{\deriv{\var{x}}{\br({\op{\frac{\fn{f}\br({\var{x}})}{\fn{g}\br({\var{x}})}}})}}
+            &\stmt=
+            \op{\frac{
+                \fn{\deriv{\var{x}}{\fn{f}}[\br({\var{x}})]} \op\cdot \fn{g}\br({\var{x}}) \op- \fn{f}\br({\var{x}}) \op\cdot \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
+            }{
+                \fn{g}^\lit{2}\br({\var{x}})
+            }}
+        \\
+        \fn{\deriv{\var{x}}{\br({\var{x}^{\var<\N>{n}}})}}
+            &\stmt=
+            \var<\N>{n} \op\cdot \var{x}^{\var<\N>{n} \op- \lit{1}}
+        \\
+        \fn{\deriv{\var{x}}{\br({\var<\N>{n}^{\var{x}}})}}
+            &\stmt=
+            \var<\N>{n}^{\var{x}} \op\cdot \fn{\ln\br({\var<\N>{n}})}
+        \\
+        \fn{\deriv{\var{x}}{\br({\lit{e}^{\var{x}}})}}
+            &\stmt=
+            \lit{e}^{\var{x}}
+        \\
+        \fn{\deriv{\var{x}}{\fn{\log_{\var<\N>{n}}}}[\br({\var{x}})]}
+            &\stmt=
+            \op{\frac{\lit{1}}{\var{x} \op\cdot \fn{\ln\br({\var<\N>{n}})}}}
+        \\
+        \fn{\deriv{\var{x}}{{\fn{\ln}}}[\br({\var{x}})]}
+            &\stmt=
+            \op{\frac{\lit{1}}{\var{x}}}
+        \\
+        \fn{\deriv{\var{x}}{\br({\fn{f} \op\circ \fn{g}})}\br({\var{x}})}
+            &\stmt=
+            \br({\fn{\deriv{\var{x}}{\fn{f}}} \op\circ \fn{g}})\br({\var{x}}) \op\cdot \fn{\deriv{\var{x}}{\fn{g}}[\br({\var{x}})]}
+            \label{chain}
+        \\
+        \fn{\deriv{\var{x}}{\br({\var{y}^\lit{2}})}}
+            &\stmt=
+            \lit{2} \op\cdot \var{y} \op\cdot \fn{\deriv{\var{x}}{\var{y}}} \label{implicit}
     \end{align}
     \subsection{Derivatives of Trig Functions}
     \begin{align}
-        \deriv{\theta}{\sin}[\theta] &= \cos \theta \\
-        \deriv{\theta}{\cos}[\theta] &= -\sin \theta \\
-        \deriv{\theta}{\tan}[\theta] &= \sec^2 \theta \\
-        \deriv{\theta}{\csc}[\theta] &= -\csc(\theta) \cdot \cot(\theta) \\
-        \deriv{\theta}{\sec}[\theta] &= \sec(\theta) \cdot \tan(\theta) \\
-        \deriv{\theta}{\cot}[\theta] &= -\csc^2 \theta \\
-        \deriv{\theta}{\arcsin}[\theta] &= \frac{1}{\sqrt{1-\theta^2}} \\
-        \deriv{\theta}{\arccos}[\theta] &= \frac{-1}{\sqrt{1-\theta^2}} \\
-        \deriv{\theta}{\arctan}[\theta] &= \frac{1}{1+\theta^2}
+        \deriv{\theta}{\sin}[\theta]
+            &\stmt=
+            \cos \theta
+        \\
+        \deriv{\theta}{\cos}[\theta]
+            &\stmt=
+            -\sin \theta
+        \\
+        \deriv{\theta}{\tan}[\theta]
+            &\stmt=
+            \sec^2 \theta
+        \\
+        \deriv{\theta}{\csc}[\theta]
+            &\stmt=
+            -\csc(\theta) \cdot \cot(\theta)
+        \\
+        \deriv{\theta}{\sec}[\theta]
+            &\stmt=
+            \sec(\theta) \cdot \tan(\theta)
+        \\
+        \deriv{\theta}{\cot}[\theta]
+            &\stmt=
+            -\csc^2 \theta
+        \\
+        \deriv{\theta}{\arcsin}[\theta]
+            &\stmt=
+            \frac{1}{\sqrt{1-\theta^2}}
+        \\
+        \deriv{\theta}{\arccos}[\theta]
+            &\stmt=
+            \frac{-1}{\sqrt{1-\theta^2}}
+        \\
+        \deriv{\theta}{\arctan}[\theta]
+            &\stmt=
+            \frac{1}{1+\theta^2}
     \end{align}
 
     \section{Integration}
@@ -401,5 +484,5 @@
     \end{align}
 
     \chapter{Proofs}
-    
+
 \end{document}
