@@ -144,20 +144,20 @@
 \begin{document}
     \maketitle
     \section{Reflexive}
-\begin{align*}
+\begin{gather*}
 \var{x}  \stmt{=}  \var{x}
-\end{align*}
+\end{gather*}
 \section{Symmetric}
-\begin{align*}
+\begin{gather*}
 \var{a}  \stmt{=}   \var{b}  \stmt{\iff}  \var{b}  \stmt{=}   \var{a}\\
 \var{a}  \stmt{\ne}  \var{b}  \stmt{\iff}  \var{b}  \stmt{\ne}  \var{a}\\
 \var{a}  \stmt{\le}  \var{b}  \stmt{\iff}  \var{b}  \stmt{\ge}  \var{a}\\
 \var{a}  \stmt{<}   \var{b}  \stmt{\iff}  \var{b}  \stmt{>}   \var{a}
-\end{align*}
+\end{gather*}
 \section{Derivatives}
-\begin{align*}
+\begin{gather*}
 \deriv{\var{x}} \const{c}  \stmt{=}  {\lit{0}}\\
 \deriv{\var{x}} \var{x}  \stmt{=}  {\lit{1}}\\
 \deriv{\var{x}} {\group(\const{c}  \op{\cdot}  \var{x})}  \stmt{=}  \const{c}  \op{\cdot}  \deriv{\var{x}} \var{x}
-\end{align*}
+\end{gather*}
 \end{document}

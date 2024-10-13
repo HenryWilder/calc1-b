@@ -83,7 +83,7 @@ with open("tex/template.tex", "r") as file:
 
 with open("tex/output.tex", "w") as tex:
     content_str = "\n".join([
-        (f"\section{{{name}}}\n" if name is not None else "") + f"\\begin{{align*}}\n{"\\\\\n".join(items)}\n\\end{{align*}}"
+        (f"\section{{{name}}}\n" if name is not None else "") + f"\\begin{{gather*}}\n{"\\\\\n".join(items)}\n\\end{{gather*}}"
         for (name, items) in content if len(items) != 0
     ])
     print(f"\ngenerated:\n{content_str}")
