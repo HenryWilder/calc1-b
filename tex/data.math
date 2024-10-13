@@ -4,12 +4,25 @@
 {
     const c in Real
     let x in Real
+    let a in Real
+    let b in Real
+    let n in Integer
+    let m in Integer
     fn f()
     fn g()
 
     /// Reflexive
     x = x
 
-    /// Test
-    d/dx (5*x)
+    /// Symmetric
+    a =  b <=> b =  a
+    a != b <=> b != a
+    a <= b <=> b >= a
+    a <  b <=> b >  a
+
+    /// Derivatives
+    const c in Real
+    d/dx c = 0
+    d/dx x = 1
+    d/dx (c * x) = c * d/dx x
 }

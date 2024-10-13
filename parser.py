@@ -1,11 +1,24 @@
 import re
+from re import Match
 
 title = None
 author = None
 content: list[tuple[str|None,list[str]]] = [(None,[])]
 
 with open("tex/data.math", "r") as data:
-    scope: list[dict[str,str]] = []
+    scope: list[dict[str,str]] = [{}]
+    def scope_lookup(match: Match[str]):
+        global scope
+        name = match.group(1)
+        print(f"Looking for {name}...")
+        for layer in reversed(scope):
+            # print(layer)
+            if name in layer:
+                kind = layer[name]
+                print(f"Found {name}: {kind}")
+                return f"\\{kind}{{{name}}}"
+        print(f"{name} not found")
+        return name
     for line in [line.strip() for line in data.readlines()]:
         if len(line) == 0:
             continue
@@ -31,17 +44,29 @@ with open("tex/data.math", "r") as data:
             name = statement[1]
             if kind == "let":
                 hint = statement[2]
+                scope[-1][name] = "var"
                 print(f"new variable \"{name}\": \"{hint}\"")
             elif kind == "const":
                 hint = statement[2]
+                scope[-1][name] = "const"
                 print(f"new constant \"{name}\": \"{hint}\"")
             elif kind == "fn":
                 name = name[:-len("()")]
+                hint = "be a function"
+                scope[-1][name] = "fn"
                 print(f"new function \"{name}\"")
+            # hint = re.sub(r"\bin\b", r" \\in ", hint).replace("Real", "\\R").replace("Integer", "\\Z").replace("Real", "\\R")
+            # content[-1][1].append(f"Let {name} {hint}")
         else:
             print(line)
+            line = re.sub(r"d(?:(?P<order>\^\-?\d+))?/d(?P<wr2>[a-zA-Z])(?(order)(?P=order)|)", r"\\deriv\g<order>{\g<wr2>}", line)
+            line = re.sub(r"lim\[(.+?)\]", r"\\fn{\\lim_{\g<1>}}", line)
+            line = re.sub(r"(?<![a-z\\])([a-zA-Z])", scope_lookup, line)
             line = line.replace("(", "{\\group(").replace(")", ")}")
+            line = line.replace("[", "{\\br[{").replace("]", "}]}")
             line = line.replace("<=>", " \\stmt{\\iff} ")
+            line = line.replace("=>", " \\stmt{\\implies} ")
+            line = line.replace("->", " \\to ")
             line = line.replace("!=", " \\stmt{\\ne} ")
             line = line.replace("<=", " \\stmt{\\le} ")
             line = line.replace(">=", " \\stmt{\\ge} ")
@@ -49,7 +74,6 @@ with open("tex/data.math", "r") as data:
             line = line.replace(">", " \\stmt{>} ")
             line = line.replace("=", " \\stmt{=} ")
             line = line.replace("*", " \\op{\\cdot} ")
-            line = re.sub(r"d(?:(?P<order>\^\-?\d+))?/d(?P<wr2>[a-zA-Z])(?(order)(?P=order)|)", r"\\deriv\g<order>{\g<wr2>}", line)
             line = re.sub(r"\-?\d+", r"{\\lit{\g<0>}}", line)
             content[-1][1].append(line)
 
