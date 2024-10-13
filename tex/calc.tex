@@ -18,6 +18,7 @@
 \usepackage{psfrag}
 \usepackage{pgfplots}
 \usepackage{bm}
+\usepackage{xparse}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \makeatletter
@@ -41,7 +42,7 @@
 % - leibniz
 % - lagrange
 % - euler
-\newcommand{\CalcNotation}{leibniz}
+\newcommand{\CalcNotation}{lagrange}
 
 \NewDocumentCommand{\deriv}{ s e{^} m d() g d() }{
     % #1: Put in top of Leibniz fraction
@@ -53,25 +54,21 @@
     \ifdefstring{\CalcNotation}{leibniz}{
         % Leibniz
         \fn{\frac{
-            \IfNoValueTF{#2}{ d }{ d^{#2} }
-            \IfBooleanT{#1}{
-                \IfNoValueTF{#4}{ #5 }{ \group(#4) }
-            }
+            \IfValueTF{#2}{ d^{#2} }{ d }
+            \IfBooleanT{#1}{ \IfValueTF{#4}{ \group(#4) }{ #5 } }
         }{
-            \IfNoValueTF{#2}{ d{#3} }{ d{#3}^{#2} }
+            \IfValueTF{#2}{ d{#3}^{#2} }{ d{#3} }
         }}
         \IfBooleanF{#1}{
-            \IfNoValueTF{#4}{ #5 }{ \group(#4) }
+            \IfValueTF{#4}{ \group(#4) }{ #5 }
         }
-        \IfNoValueF{#6}{ \group(#6) }
+        \IfValueT{#6}{ \group(#6) }
     }{\ifdefstring{\CalcNotation}{lagrange}{
         % Lagrange (prime)
-        \IfNoValueTF{#4}{ #5 }{ \group(#4) }
+        \IfValueTF{#4}{ \group(#4) }{ #5 }
         ^{
             \fn{
-                \IfNoValueTF{#2}{
-                    \fn{\prime}
-                }{
+                \IfValueTF{#2}{
                     \ifnumequal{#2}{1}{
                         \prime
                     }{\ifnumequal{#2}{2}{
@@ -79,24 +76,33 @@
                     }{
                         \left(#2\right)
                     }}
+                }{
+                    \fn{\prime}
                 }
             }
         }
-        \IfNoValueF{#6}{ \group(#6) }
+        \IfValueT{#6}{ \group(#6) }
     }{\ifdefstring{\CalcNotation}{euler}{
         % Euler
-        \fn{
-            \IfNoValueTF{#2}{
-                D_{#3}
-            }{
-                D^{#2}_{#3}
-            }
-        }
-        \IfNoValueTF{#4}{ #5 }{ \group(#4) }
-        \IfNoValueF{#6}{ \group(#6) }
+        \fn{\IfValueTF{#2}{ D^{#2}_{#3} }{ D_{#3} }}
+        \IfValueTF{#4}{ \group(#4) }{ #5 }
+        \IfValueT{#6}{ \group(#6) }
     }{
         \errmessage{I don't know how to represent ``\CalcNotation'' notation.}
     }}}
+    % Validation
+    \IfValueTF{#4}{
+        \IfValueT{#5}{
+            \errmessage{
+                Derivative expression cannot simultaneously have and lack parentheses.
+                Consider enclosing the command in braces if either ``(#4)'' or ``{#5}'' is not intended as an argument
+            }
+        }
+    }{
+        \IfValueF{#5}{
+            \errmessage{Must provide an expression to take the derivative of.}
+        }
+    }
 }
 
 \def\ColorReset{\color[HTML]{cccccc}}
@@ -131,67 +137,64 @@
     \brPush
     {\brColor
         \left#1
-        {\ColorReset
-            #2
-        }
+        {\ColorReset #2 }
         \right#3
     }
     \brPop
 }
-\NewDocumentCommand{\group}{d() d[] d\{\}}{
-    \IfNoValueTF{#1}{
-    \IfNoValueTF{#2}{
-    \IfNoValueTF{#3}{
-        \errmessage{Argument must be enclosed in parentheses, brackets, or braces.}
-    }{
-        {\br\{{#3}\}}
-    }}{
-        {\br[{#2}]}
-    }}{
-        {\br({#1})}
-    }
+\NewDocumentCommand{\group}{r()}{
+    \br({#1})
 }
 
-\def\Const#1{{\color[HTML]{4fc1ff}#1}}
-\def\Var#1{{\color[HTML]{9cdcfe}#1}}
-\def\Fn#1{{\color[HTML]{dcdcaa}#1}}
-\def\type#1{{\color[HTML]{4ec9b0}#1}}
-\def\lit#1{{\color[HTML]{b5cea8}#1}}
-\def\keyword#1{{\color[HTML]{569cd6}#1}}
-\def\op#1{\mathbin{\color[HTML]{569cd6}#1}}
-\def\stmt#1{\mathrel{\color[HTML]{c586c0}#1}}
-\def\aside#1{\mathrlap{\qquad\color[HTML]{6a9955}#1}}
-\def\ghost#1{{\transparent{0.34}\color{white}#1}}
-
-\def\R{\type{\mathbb{R}}}
-\def\N{\type{\mathbb{N}}}
-\def\Z{\type{\mathbb{Z}}}
-
-\newbool{ShowHints}
-\boolfalse{ShowHints}
-
-\def\hint#1#2{
-    \ifbool{ShowHints}{
-        #2 {\ghost{\scalebox{0.4}{\ensuremath{#1}}}}
-    }{
-        #2
-    }
+\NewDocumentCommand{\type}{m}{
+    {\color[HTML]{4ec9b0}#1}
 }
-\NewDocumentCommand{\var}{d<>m}{\IfNoValueTF{#1}{\Var{#2}}{\hint{\;\in\type{#1}}{\Var{#2}}}}
-\NewDocumentCommand{\const}{d<>m}{\IfNoValueTF{#1}{\Const{#2}}{\hint{\;\in\type{#1}}{\Const{#2}}}}
+\NewDocumentCommand{\lit}{m}{
+    {\color[HTML]{b5cea8}#1}
+}
+\NewDocumentCommand{\keyword}{m}{
+    {\color[HTML]{569cd6}#1}
+}
+\NewDocumentCommand{\op}{m}{
+    \mathbin{\color[HTML]{569cd6}#1}
+}
+\NewDocumentCommand{\stmt}{m}{
+    \mathrel{\color[HTML]{c586c0}#1}
+}
+\NewDocumentCommand{\aside}{m}{
+    \mathrlap{\qquad\color[HTML]{6a9955}#1}
+}
+\NewDocumentCommand{\var}{d<>m}{
+    {\color[HTML]{9cdcfe}#2}
+}
+\NewDocumentCommand{\const}{d<>m}{
+    {\color[HTML]{4fc1ff}#2}
+}
+\NewDocumentCommand{\ghost}{m}{
+    {\transparent{0.34}\color{white}#1}
+}
 
+\def\R{{\type{\mathbb{R}}}}
+\def\N{{\type{\mathbb{N}}}}
+\def\Z{{\type{\mathbb{Z}}}}
 \NewDocumentCommand{\fn}{md()}{
-    {\color[HTML]{dcdcaa}#1\IfNoValueF{#2}{\group(#2)}}
+    {\color[HTML]{dcdcaa}
+        #1
+        \IfValueT{#2}{
+            \group(#2)
+        }
+    }
 }
 
 \newbool{UseBinomials}
 \booltrue{UseBinomials}
 
-\def\Binom#1#2{
+\NewCommandCopy{\builtinBinom}{\binom}
+\RenewDocumentCommand{\binom}{mm}{
     \ifbool{UseBinomials}{
         \brPush
         {\brColor
-            \binom{
+            \builtinBinom{
                 {\ColorReset #1}
             }{
                 {\ColorReset #2}
@@ -202,9 +205,28 @@
         \op{\frac{
             \var{n}\op!
         }{
-            \var{i}\op! \op\cdot \br({\var{n} \op- \var{i}})\op!
+            \var{i}\op! \mul \br({\var{n} \op- \var{i}})\op!
         }}
     }
+}
+\NewCommandCopy{\builtinLog}{\log}
+\RenewDocumentCommand{\log}{e{_}g}{
+    \fn{\builtinLog_{#1}}({#2})
+}
+\NewCommandCopy{\builtinLn}{\ln}
+\RenewDocumentCommand{\ln}{g}{
+    \fn{\builtinLn}({#1})
+}
+\NewCommandCopy{\builtinFrac}{\frac}
+\RenewDocumentCommand{\frac}{mm}{
+    \op{\builtinFrac{#1}{#2}}
+}
+\NewCommandCopy{\builtinSqrt}{\sqrt}
+\RenewDocumentCommand{\sqrt}{om}{
+    \op{\IfValueTF{#1}{\builtinSqrt[#1]{#2}}{\builtinSqrt{#2}}}
+}
+\NewDocumentCommand{\mul}{mm}{
+    #1 \op\cdot #2
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% Page Setting %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,6 +234,7 @@
 \pagecolor[RGB]{31,31,31}
 % \pagecolor[RGB]{0,0,0}
 \ColorReset
+\addtolength{\jot}{2ex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% Define some useful colors %%%%%%%%%%%%%%%%%%%%%%%%%%
 \definecolor{ocre}{RGB}{243,102,25}
@@ -253,117 +276,117 @@
     \chapter{Properties}
 
     % Derivative unit tests
-    \clearpage
-    \begin{gather*}
-        \def\CalcNotation{leibniz}
-        \begin{matrix*}
-            \displaystyle \deriv        {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv *      {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv        {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv *      {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv        {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv *      {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv        {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv *      {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})          (\var{x})
-        \end{matrix*}
-        \\[2em]
-        \def\CalcNotation{lagrange}
-        \begin{matrix*}
-            \displaystyle \deriv        {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv *      {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv        {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv *      {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv        {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv *      {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv        {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv *      {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})          (\var{x})
-        \end{matrix*}
-        \\[2em]
-        \def\CalcNotation{euler}
-        \begin{matrix*}
-            \displaystyle \deriv        {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv *      {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv        {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv *      {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv        {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv *      {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv        {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv *      {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
-            \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}}           &
-            \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})                    &
-            \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
-            \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})          (\var{x}) &
-            \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})          (\var{x})
-        \end{matrix*}
-    \end{gather*}
-    \clearpage
+    % \clearpage
+    % \begin{gather*}
+    %     \def\CalcNotation{leibniz}
+    %     \begin{matrix*}
+    %         \displaystyle \deriv        {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv *      {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv        {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv *      {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv        {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv *      {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv        {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv *      {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})          (\var{x})
+    %     \end{matrix*}
+    %     \\[2em]
+    %     \def\CalcNotation{lagrange}
+    %     \begin{matrix*}
+    %         \displaystyle \deriv        {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv *      {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv        {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv *      {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv        {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv *      {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv        {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv *      {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})          (\var{x})
+    %     \end{matrix*}
+    %     \\[2em]
+    %     \def\CalcNotation{euler}
+    %     \begin{matrix*}
+    %         \displaystyle \deriv        {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv *      {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv        {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv *      {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv        {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv *      {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv        {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv *      {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{1} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{1} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{1} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{2} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{2} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{2} {\var{x}} (\fn{f})          (\var{x}) \\[2em]
+    %         \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}}           &
+    %         \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})                    &
+    %         \displaystyle \deriv   ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv * ^{3} {\var{x}}          {\fn{f}} (\var{x}) &
+    %         \displaystyle \deriv   ^{3} {\var{x}} (\fn{f})          (\var{x}) &
+    %         \displaystyle \deriv * ^{3} {\var{x}} (\fn{f})          (\var{x})
+    %     \end{matrix*}
+    % \end{gather*}
+    % \clearpage
 
     % Assume the following:
     % \begin{itemize}
@@ -402,151 +425,204 @@
     \begin{align}
         \var{x} \op+ \lit{0} &\stmt= \var{x} \\
         \var{x} \op- \lit{0} &\stmt= \var{x} \\
-        \var{x} \op\cdot \lit{1} &\stmt= \var{x} \\
-        \op{\frac{\var{x}}{\lit{1}}} &\stmt= \var{x} \\
+        \mul{\var{x}}{\lit{1}} &\stmt= \var{x} \\
+        \frac{\var{x}}{\lit{1}} &\stmt= \var{x} \\
         \var{x}^\lit{1} &\stmt= \var{x} \\
-        \deriv{\var{x}}{\br({\lit{e}^{\var{x}}})} &\stmt= \lit{e}^{\var{x}}
+        \deriv{\var{x}}(\lit{e}^{\var{x}}) &\stmt= \lit{e}^{\var{x}}
     \end{align}
 
     \section{Fixed Point}
     \begin{align}
-        \var{x} \op\cdot \lit{0} &\stmt= \lit{0} \\
+        \mul{\var{x}}{\lit{0}} &\stmt= \lit{0} \\
         {\var{x}}^\lit{0} &\stmt= \lit{1} \\
-        \fn{\log_{\var{x}} \lit{1}} &\stmt= \lit{0} \\
-        \deriv{\var{x}}{\var{x}} &\stmt= \lit{1}
+        \log_{\var{x}}{\lit{1}} &\stmt= \lit{0} \\
+        \deriv*{\var{x}}{\var{x}} &\stmt= \lit{1}
     \end{align}
 
     \section{Cancellation}
     \begin{align}
         \var{x} \op- \var{x} &\stmt= \lit{0} \\
-        \op{\frac{\var{x}}{\var{x}}} &\stmt= \lit{1} \aside{\iff \var{x} \stmt\ne \lit{0}} \\
-        \fn{\log_{\var{x}} \var{x}} &\stmt= \lit{1} \\
-        \fn{\ln \lit{e}} &\stmt= \lit{1} \\
-        \deriv{\var{x}}{\const{c}} &\stmt= \lit{0}
+        \frac{\var{x}}{\var<\ne0>{x}} &\stmt= \lit{1} \\
+        \log_{\var{x}}{\var{x}} &\stmt= \lit{1} \\
+        \ln{\lit{e}} &\stmt= \lit{1} \\
+        \deriv*{\var{x}}{\const{c}} &\stmt= \lit{0}
     \end{align}
 
     \section{Commutative}
     \begin{align}
         \var{a} \op+ \var{b} &\stmt= \var{b} \op+ \var{a} \\
-        \var{a} \op\cdot \var{b} &\stmt= \var{b} \op\cdot \var{a}
+        \mul{\var{a}}{\var{b}} &\stmt= \mul{\var{b}}{\var{a}}
     \end{align}
 
     \section{Associative}
     \begin{align}
-        \br({\var{a} \op+ \var{b}}) \op+ \var{c} &\stmt= \var{a} \op+ \br({\var{b} \op+ \var{c}}) \\
-        \br({\var{a} \op\cdot \var{b}}) \op\cdot \var{c} &\stmt= \var{a} \op\cdot \br({\var{b} \op\cdot \var{c}})
-    \end{align}
-
-    \section{Sum}
-    \begin{align}
-        \label{sumof-log}
-        \fn{\log_{\var{n}}}(\var{a}) \op+ \fn{\log_{\var{n}}}(\var{b}) &\stmt= \fn{\log_{\var{n}}}(\var{a} \op\cdot \var{b}) \\
-        \label{sumof-deriv}
-        \deriv{\var{x}}{\br({\fn{f}(\var{x}) \op+ \fn{g}(\var{x})})} &\stmt= \deriv{\var{x}}{\fn{f}}(\var{x}) \op+ \deriv{\var{x}}{\fn{g}}(\var{x})
-    \end{align}
-
-    \section{Difference}
-    \begin{align}
-        \label{differenceof-log}
-        \fn{\log_{\var{n}}}(\var{a}) \op- \fn{\log_{\var{n}}}(\var{b}) &\stmt= \fn{\log_{\var{n}}}(\op{\frac{\var{a}}{\var{b}}}) \\
-        \label{differenceof-deriv}
-        \deriv{\var{x}}{\br({\fn{f}(\var{x}) \op- \fn{g}(\var{x})})} &\stmt= \deriv{\var{x}}{\fn{f}}(\var{x}) \op- \deriv{\var{x}}{\fn{g}}(\var{x})
-    \end{align}
-
-    \section{Product}
-    \begin{align}
-        \label{productof-pow}
-        \var{x}^{\var{n}} \op\cdot \var{x}^{\var{m}} &\stmt= \var{x}^{\var{n} \op+ \var{m}}
-        \\
-        \label{productof-log-const}
-        \var{m} \op\cdot \fn{\log_{\var{n}}}(\var{x}) &\stmt= \fn{\log_{\var{n}}}(\var{x}^{\var{m}})
-        \\
-        \label{productof-log}
-        \fn{\log_{\var{n}}}(\var{a}) \op\cdot \fn{\log_{\var{n}}}(\var{b})
+        \group(\var{a} \op+ \var{b}) \op+ \var{c}
             &\stmt=
-            \fn{\log_{\var{n}}}(\var{a}^{\fn{\log_{\var{n}}}(\var{b})})
-            \stmt=
-            \fn{\log_{\var{n}}}(\var{b}^{\fn{\log_{\var{n}}}(\var{a})}) \\
-        \label{productof-deriv}
-        \deriv{\var{x}}{\br({\fn{f}(\var{x}) \op\cdot \fn{g}(\var{x})})}
+            \var{a} \op+ \group(\var{b} \op+ \var{c})
+        \\
+        \mul{\group(\mul{\var{a}}{\var{b}})}{\var{c}}
             &\stmt=
-                \deriv{\var{x}}{\fn{f}}(\var{x}) \op\cdot \fn{g}(\var{x})
+            \mul{\var{a}}{\group(\mul{\var{b}}{\var{c}})}
+    \end{align}
+
+    \section{Sum of}
+    \begin{align}
+        \mul{\var{a}}{\var{c}} \op+ \mul{\var{b}}{\var{c}}
+            &\stmt=
+            \mul{\group(\var{a} \op+ \var{b})}{\var{c}}
+        && \text{Products} \label{sumof-mul}
+        \\
+        \log_{\var{n}}{\var{a}} \op+ \log_{\var{n}}{\var{b}}
+            &\stmt=
+            \log_{\var{n}}{\mul{\var{a}}{\var{b}}}
+        && \text{Logarithms} \label{sumof-log}
+        \\
+        \deriv{\var{x}}{\br({\fn{f}(\var{x}) \op+ \fn{g}(\var{x})})}
+            &\stmt=
+            \deriv{\var{x}}{\fn{f}}(\var{x}) \op+ \deriv{\var{x}}{\fn{g}}(\var{x})
+        && \text{Derivatives} \label{sumof-deriv}
+    \end{align}
+
+    \section{Difference of}
+    \begin{align}
+        \log_{\var{n}}{\var{a}} \op- \log_{\var{n}}{\var{b}}
+            &\stmt=
+            \log_{\var{n}}{\frac{\var{a}}{\var{b}}}
+        && \text{Logarithms} \label{differenceof-log}
+        \\
+        \deriv{\var{x}}{\br({\fn{f}(\var{x}) \op- \fn{g}(\var{x})})}
+            &\stmt=
+            \deriv{\var{x}}{\fn{f}}(\var{x}) \op- \deriv{\var{x}}{\fn{g}}(\var{x})
+        && \text{Derivatives} \label{differenceof-deriv}
+    \end{align}
+
+    \section{Product of}
+    \begin{align}
+        \mul{\var{x}^{\var{n}}}{\var{x}^{\var{m}}}
+            &\stmt=
+            \var{x}^{\var{n} \op+ \var{m}}
+        && \text{Powers} \label{productof-pow}
+        \\
+        \mul{\var{m}}{\log_{\var{n}}{\var{x}}}
+            &\stmt=
+            \log_{\var{n}}{\var{x}^{\var{m}}}
+        && \text{Logarithms} \label{productof-log-const}
+        \\
+        \deriv{\var{x}}(\mul{\fn{f}(\var{x})}{\fn{g}(\var{x})})
+            &\stmt=
+            \mul{\deriv{\var{x}}{\fn{f}}(\var{x})}{\fn{g}(\var{x})}
+            \op+
+            \mul{\fn{g}(\var{x})}{\deriv{\var{x}}{\fn{g}}(\var{x})}
+        && \text{Derivatives} \label{productof-deriv}
+    \end{align}
+
+    \section{Quotient of}
+    \begin{align}
+        \frac{\var{x}^{\var{n}}}{\var{x}^{\var{m}}}
+            &\stmt=
+            \var{x}^{\var{n} \op- \var{m}}
+        && \text{Powers} \label{quotientof-pow}
+        \\
+        \frac{\log_{\var{n}}{\var{x}}}{\log_{\var{n}}{\var{y}}}
+            &\stmt=
+            \log_{\var{y}}{\var{x}}
+        && \text{Logarithms} \label{quotientof-log}
+        \\
+        \deriv{\var{x}}{\group(\frac{\fn{f}(\var{x})}{\fn{g}(\var{x})})}
+            &\stmt=
+            \frac{
+                \mul{\deriv{\var{x}}{\fn{f}}(\var{x})}{\fn{g}(\var{x})}
                 \op+
-                \fn{g}(\var{x}) \op\cdot \deriv{\var{x}}{\fn{g}}(\var{x})
+                \mul{\fn{g}(\var{x})}{\deriv{\var{x}}{\fn{g}}(\var{x})}
+            }{
+                \fn{g^{\lit{2}}}(\var{x})
+            }
+        && \text{Derivatives} \label{quotientof-deriv}
     \end{align}
 
-    \section{Quotient}
+    \section{Power of}
     \begin{align}
-        \label{quotientof-pow}
-        \op{\frac{\var{x}^{\var{n}}}{\var{x}^{\var{m}}}} &\stmt= \var{x}^{\var{n} \op- \var{m}}
-        \\
-        \label{quotientof-log}
-        \op{\frac{\fn{\log_{\var{n}}}(\var{x})}{\fn{\log_{\var{n}}}(\var{y})}} &\stmt= \fn{\log_{\var{y}}}(\var{x}) \\
-        \label{quotientof-deriv}
-        \deriv{\var{x}}{\br({\op{\frac{\fn{f}(\var{x})}{\fn{g}(\var{x})}}})}
+        {\group(\var{x}^{\var{n}})}^{\var{m}}
             &\stmt=
-                \op{\frac{
-                    \deriv{\var{x}}{\fn{f}}(\var{x}) \op\cdot \fn{g}(\var{x})
-                    \op+
-                    \fn{g}(\var{x}) \op\cdot \deriv{\var{x}}{\fn{g}}(\var{x})
+            \var{x}^{\mul{\var{n}}{\var{m}}}
+        && \text{Powers} \label{powerof-pow}
+        \\
+        {\group(\mul{\var{x}}{\var{y}})}^{\var{n}}
+            &\stmt=
+            \mul{\var{x}^{\var{n}}}{\var{y}^{\var{n}}}
+        && \text{Products} \label{powerof-mul}
+        \\
+        {\group(\var{a} \op+ \var{b})}^{\var{n}}
+            &\stmt=
+            \fn{\sum_{\var{i}=\lit{0}}^{\var{n}}}(
+                \mul{
+                    \binom{\var{n}}{\var{i}}
+                }{\mul{
+                    \var{a}^{\var{n} \op- \var{i}}
                 }{
-                    \fn{g^{\lit{2}}}(\var{x})
+                    \var{b}^{\var{i}}
                 }}
+            )
+        && \text{Sums} \label{powerof-sum}
+        \\
+        {\group(\frac{\var{x}}{\var{y}})}^{\var{n}}
+            &\stmt=
+            \frac{\var{x}^{\var{n}}}{\var{y}^{\var{n}}}
+        && \text{Quotients} \label{powerof-div}
+        \\
+        \deriv{\var{x}}{\group(\var{x}^{\var{n}})}
+            &\stmt=
+            \mul{\var{n}}{\var{x}^{\var{n} \op- \lit{1}}}
+        && \text{Derivatives} \label{powerof-deriv}
     \end{align}
 
-    \section{Power}
+    \section{Log of}
     \begin{align}
-        \label{powerof-pow}
-        {\br({\var{x}^{\var{n}}})}^{\var{m}} &\stmt= \var{x}^{\var{n} \op\cdot \var{m}}
-        \\
-        \label{powerof-mul}
-        {\br({\var{x} \op\cdot \var{y}})}^{\var{n}} &\stmt= \var{x}^{\var{n}} \op\cdot \var{y}^{\var{n}}
-        \\
-        \label{powerof-sum}
-        {\br({\var{a} \op+ \var{b}})}^{\var{n}} &\stmt= \fn{\sum_{\var{i}\op=\lit{0}}^{\var{n}}}(
-            \Binom{\var{n}}{\var{i}}
-            \op\cdot
-            \var{a}^{\var{n} \op- \var{i}}
-            \op\cdot
-            \var{b}^{\var{i}}
-        )
-        \\
-        \label{powerof-div}
-        {\br({\op{\frac{\var{x}}{\var{y}}}})}^{\var{n}} &\stmt= \op{\frac{\var{x}^{\var{n}}}{\var{y}^{\var{n}}}}
-        \\
-        \label{powerof-deriv}
-        \deriv{\var{x}}{\br({\var{x}^{\var{n}}})} &\stmt= \var{n} \op\cdot \var{x}^{\var{n} \op- \lit{1}}
+        \deriv{\var{x}}{\log_{\var{n}}}(\var{x})
+            &\stmt=
+            \frac{\lit{1}}{\mul{\var{x}}{\fn{\ln}(\var{n})}}
+        && \text{Derivatives} \label{logof-deriv}
+    \end{align}
+    \subsection{Natural Log of}
+    \begin{align}
+        \deriv{\var{x}}{\ln}(\var{x})
+            &\stmt=
+            \frac{\lit{1}}{\var{x}}
+        && \text{Derivatives} \label{lnof-deriv}
     \end{align}
 
-    \section{Log}
+    \section{Exponent of}
     \begin{align}
-        \label{logof-deriv}
-        \deriv{\var{x}}{\fn{\log_{\var{n}}}}(\var{x}) &\stmt= \op{\frac{\lit{1}}{\var{x} \op\cdot \fn{\ln}(\var{n})}}
-    \end{align}
-    \subsection{Natural Log}
-    \begin{align}
-        \label{lnof-deriv}
-        \deriv{\var{x}}{\fn{\ln}}(\var{x}) &\stmt= \op{\frac{\lit{1}}{\var{x}}}
-    \end{align}
-
-    \section{Exponent}
-    \begin{align}
-        \label{exponentof-div}
-        \var{x}^{\op{\frac{\var{n}}{\var{m}}}} &\stmt= \op{\sqrt[\var{m}]{\var{x}^{\var{n}}}}
+        \var{x}^{\op{\var{n}/\var{m}}}
+            &\stmt=
+            \sqrt[\var{m}]{\var{x}^{\var{n}}}
+        && \text{Quotients} \label{exponentof-div}
         \\
-        \label{exponentof-neg}
-        \var{x}^{\op-\var{n}} &\stmt= \op{\frac{\lit{1}}{\var{x}^{\var{n}}}}
+        \var{x}^{\op-\var{n}}
+            &\stmt=
+            \frac{\lit{1}}{\var{x}^{\var{n}}}
+        && \text{Negation} \label{exponentof-neg}
         \\
-        \label{exponentof-deriv}
-        \deriv{\var{x}}{\br({\var{a}^{\var{x}}})} &\stmt= \var{a}^{\var{x}} \op\cdot \fn{\ln}(\var{a})
+        \deriv{\var{x}}{\group(\var{a}^{\var{x}})}
+            &\stmt=
+            \mul{
+                \var{a}^{\var{x}}
+            }{
+                \fn{\ln}(\var{a})
+            }
+        && \text{Derivatives} \label{exponentof-deriv}
     \end{align}
 
     \section{Chain}
     \begin{align}
+        \deriv{\var{x}}(\fn{f} \op\circ \fn{g})(\var{x})
+            &\stmt=
+            \mul{
+                \deriv{\var{x}}{\fn{f}}(\fn{g}(\var{x}))
+            }{
+                \deriv{\var{x}}{\fn{g}}(\var{x})
+            }
         \label{chainof-deriv}
-        \deriv{\var{x}}{\br({\fn{f}(\fn{g}(\var{x}))})}
-        &\stmt=
-            \deriv{\var{x}}{\fn{f}}(\var{u}) \op\cdot \deriv{\var{x}}{\var{u}} \stmt: \var{u} \stmt= \fn{g}(\var{x})
     \end{align}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -633,33 +709,33 @@
     %     x \lor \true &= \true
     % \end{align}
 
-    % \section{Trig}
-    % \subsection{Definitions}
-    % \begin{align}
-    %     \sin\theta &= \frac{y}{r} = \frac{1}{\csc\theta} \\
-    %     \cos\theta &= \frac{x}{r} = \frac{1}{\sec\theta} \\
-    %     \tan\theta &= \frac{y}{x} = \frac{1}{\cot\theta} = \frac{\sin\theta}{\cos\theta} \\
-    %     \csc\theta &= \frac{r}{y} = \frac{1}{\sin\theta} \\
-    %     \sec\theta &= \frac{r}{x} = \frac{1}{\cos\theta} \\
-    %     \cot\theta &= \frac{x}{y} = \frac{1}{\tan\theta} = \frac{\cos\theta}{\sin\theta}
-    % \end{align}
-    % \subsection{Pythagorean}
-    % \begin{align}
-    %     \cos^2\theta+\sin^2\theta &= 1 \\
-    %     \sin^2\theta &= 1 - \cos^2 \theta \\
-    %     \sin\theta &= \pm\sqrt{1 - \cos^2 \theta} \\
-    %     \cos^2\theta &= 1 - \sin^2 \theta \\
-    %     \cos\theta &= \pm\sqrt{1 - \sin^2 \theta} \\
-    % \end{align}
-    % \subsection{Angle Sum and Difference}
-    % \begin{align}
-    %     \sin(\alpha \pm \beta) &= \sin\alpha\cdot\cos\beta \pm \cos\alpha\cdot\sin\beta \\
-    %     \cos(\alpha \pm \beta) &= \cos\alpha\cdot\cos\beta \mp \sin\alpha\cdot\sin\beta \\
-    %     \tan(\alpha \pm \beta) &= \frac{\tan\alpha \pm \tan\beta}{1 \mp \tan\alpha\cdot\tan\beta} \\
-    %     \sin(2\theta) &= 2\sin\theta\cdot\cos\theta \\
-    %     \cos(2\theta) &= \cos^2\theta - \sin^2\theta \\
-    %     \tan(2\theta) &= \frac{2\tan\theta}{1 - \tan^2\theta}
-    % \end{align}
+    \section{Trig}
+    \subsection{Definitions}
+    \begin{align}
+        \sin\theta &= \frac{y}{r} = \frac{1}{\csc\theta} \\
+        \cos\theta &= \frac{x}{r} = \frac{1}{\sec\theta} \\
+        \tan\theta &= \frac{y}{x} = \frac{1}{\cot\theta} = \frac{\sin\theta}{\cos\theta} \\
+        \csc\theta &= \frac{r}{y} = \frac{1}{\sin\theta} \\
+        \sec\theta &= \frac{r}{x} = \frac{1}{\cos\theta} \\
+        \cot\theta &= \frac{x}{y} = \frac{1}{\tan\theta} = \frac{\cos\theta}{\sin\theta}
+    \end{align}
+    \subsection{Pythagorean}
+    \begin{align}
+        \cos^2\theta+\sin^2\theta &= 1 \\
+        \sin^2\theta &= 1 - \cos^2 \theta \\
+        \sin\theta &= \pm\sqrt{1 - \cos^2 \theta} \\
+        \cos^2\theta &= 1 - \sin^2 \theta \\
+        \cos\theta &= \pm\sqrt{1 - \sin^2 \theta} \\
+    \end{align}
+    \subsection{Angle Sum and Difference}
+    \begin{align}
+        \sin(\alpha \pm \beta) &= \sin\alpha\cdot\cos\beta \pm \cos\alpha\cdot\sin\beta \\
+        \cos(\alpha \pm \beta) &= \cos\alpha\cdot\cos\beta \mp \sin\alpha\cdot\sin\beta \\
+        \tan(\alpha \pm \beta) &= \frac{\tan\alpha \pm \tan\beta}{1 \mp \tan\alpha\cdot\tan\beta} \\
+        \sin(2\theta) &= 2\sin\theta\cdot\cos\theta \\
+        \cos(2\theta) &= \cos^2\theta - \sin^2\theta \\
+        \tan(2\theta) &= \frac{2\tan\theta}{1 - \tan^2\theta}
+    \end{align}
 
     % \section{Limits}
     % Let \(\const{c}\) be a constant and \(\var<\N>{n} \in \N\)
@@ -685,13 +761,13 @@
     %         &\stmt=
     %         \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}] \op- \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
     %     \\[1ex]
-    %     \fn{\lim_{\var{x} \to \var{a}}}[\const{c} \op\cdot \fn{f}[\var{x}]]
+    %     \fn{\lim_{\var{x} \to \var{a}}}[\const{c} \mul \fn{f}[\var{x}]]
     %         &\stmt=
-    %         \const{c} \op\cdot \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}]
+    %         \const{c} \mul \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}]
     %     \\[1ex]
-    %     \fn{\lim_{\var{x} \to \var{a}}}[\fn{f}[\var{x}] \op\cdot \fn{g}[\var{x}]]
+    %     \fn{\lim_{\var{x} \to \var{a}}}[\fn{f}[\var{x}] \mul \fn{g}[\var{x}]]
     %         &\stmt=
-    %         \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}] \op\cdot \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
+    %         \lim_{\var{x} \to \var{a}} \fn{f}[\var{x}] \mul \lim_{\var{x} \to \var{a}} \fn{g}[\var{x}]
     %     \\[1ex]
     %     \fn{\lim_{\var{x} \to \var{a}}} \br({\frac{\fn{f}[\var{x}]}{\fn{g}[\var{x}]}})
     %         &\stmt=
@@ -722,33 +798,33 @@
     %         &\stmt=
     %         \lit{1}
     %     \\[1ex] % 1x^0
-    %     \deriv{\var{x}}{\br({\const{c} \op\cdot \fn{f}[\var{x}]})}
+    %     \deriv{\var{x}}{\br({\const{c} \mul \fn{f}[\var{x}]})}
     %         &\stmt=
-    %         \const{c} \op\cdot \deriv{\var{x}}{\fn{f}}[\var{x}]
+    %         \const{c} \mul \deriv{\var{x}}{\fn{f}}[\var{x}]
     %     \\[1ex]
     %     \deriv{\var{x}}{\br({\fn{f}[\var{x}] \op\pm \fn{g}[\var{x}]})}
     %         &\stmt=
     %         \deriv{\var{x}}{\fn{f}}[\var{x}] \op\pm \deriv{\var{x}}{\fn{g}}[\var{x}]
     %     \\[1ex]
-    %     \deriv{\var{x}}{\br({\fn{f}[\var{x}] \op\cdot \fn{g}[\var{x}]})}
+    %     \deriv{\var{x}}{\br({\fn{f}[\var{x}] \mul \fn{g}[\var{x}]})}
     %         &\stmt=
-    %         \deriv{\var{x}}{\fn{f}}[\var{x}] \op\cdot \fn{g}[\var{x}] \op+ \fn{f}[\var{x}] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
+    %         \deriv{\var{x}}{\fn{f}}[\var{x}] \mul \fn{g}[\var{x}] \op+ \fn{f}[\var{x}] \mul \deriv{\var{x}}{\fn{g}}[\var{x}]
     %     \\[1ex]
     %     \deriv{\var{x}}{\br({\op{\frac{\fn{f}[\var{x}]}{\fn{g}[\var{x}]}}})}
     %         &\stmt=
     %         \op{\frac{
-    %             \deriv{\var{x}}{\fn{f}}[\var{x}] \op\cdot \fn{g}[\var{x}] \op- \fn{f}[\var{x}] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
+    %             \deriv{\var{x}}{\fn{f}}[\var{x}] \mul \fn{g}[\var{x}] \op- \fn{f}[\var{x}] \mul \deriv{\var{x}}{\fn{g}}[\var{x}]
     %         }{
     %             \fn{g^\lit{2}}[\var{x}]
     %         }}
     %     \\[1ex]
     %     \deriv{\var{x}}{\br({\var{x}^{\var<\N>{n}}})}
     %         &\stmt=
-    %         \var<\N>{n} \op\cdot \var{x}^{\var<\N>{n} \op- \lit{1}}
+    %         \var<\N>{n} \mul \var{x}^{\var<\N>{n} \op- \lit{1}}
     %     \\[1ex]
     %     \deriv{\var{x}}{\br({\var<\N>{n}^{\var{x}}})}
     %         &\stmt=
-    %         \var<\N>{n}^{\var{x}} \op\cdot \fn{\ln}[\var<\N>{n}]
+    %         \var<\N>{n}^{\var{x}} \mul \fn{\ln}[\var<\N>{n}]
     %     \\[1ex]
     %     \deriv{\var{x}}{\br({\lit{e}^{\var{x}}})}
     %         &\stmt=
@@ -756,7 +832,7 @@
     %     \\[1ex]
     %     \deriv{\var{x}}{\fn{\log_{\var<\N>{n}}}}[\var{x}]
     %         &\stmt=
-    %         \op{\frac{\lit{1}}{\var{x} \op\cdot \fn{\ln}[\var<\N>{n}]}}
+    %         \op{\frac{\lit{1}}{\var{x} \mul \fn{\ln}[\var<\N>{n}]}}
     %     \\[1ex]
     %     \deriv{\var{x}}{{\fn{\ln}}}[\var{x}]
     %         &\stmt=
@@ -771,59 +847,59 @@
     %     \ifdefstring{\ChainRuleSyntax}{circ}{
     %         \deriv{\var{x}}{\br({\fn{f} \op\circ \fn{g}})}[\var{x}]
     %             &\stmt=
-    %             \fn{\br({\deriv{\var{x}}{\fn{f}} \op\circ \fn{g}})}[\var{x}] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
+    %             \fn{\br({\deriv{\var{x}}{\fn{f}} \op\circ \fn{g}})}[\var{x}] \mul \deriv{\var{x}}{\fn{g}}[\var{x}]
     %     }{\ifdefstring{\ChainRuleSyntax}{enclosed}{
     %         \deriv{\var{x}}{\br({\fn{f}[\fn{g}[\var{x}]]})}
     %             &\stmt=
-    %             \deriv{\var{x}}{\fn{f}}[\fn{g}[\var{x}]] \op\cdot \deriv{\var{x}}{\fn{g}}[\var{x}]
+    %             \deriv{\var{x}}{\fn{f}}[\fn{g}[\var{x}]] \mul \deriv{\var{x}}{\fn{g}}[\var{x}]
     %     }{\ifdefstring{\ChainRuleSyntax}{leibniz}{
     %         \fn{\frac{d\var{y}}{d\var{x}}}
     %             &\stmt=
     %             \fn{\frac{d\var{y}}{d\var{u}}}
-    %             \op\cdot
+    %             \mul
     %             \fn{\frac{d\var{u}}{d\var{x}}}
     %     }{
     %         \errmessage{I don't know how to represent ``\ChainRuleSyntax'' chain rule syntax}
     %     }}}
     % \end{align}
-    % \subsection{Derivatives of Trig Functions}
-    % \begin{align}
-    %     \deriv{\theta}{\sin}[\theta]
-    %         &\stmt=
-    %         \cos \theta
-    %     \\
-    %     \deriv{\theta}{\cos}[\theta]
-    %         &\stmt=
-    %         -\sin \theta
-    %     \\
-    %     \deriv{\theta}{\tan}[\theta]
-    %         &\stmt=
-    %         \sec^2 \theta
-    %     \\
-    %     \deriv{\theta}{\csc}[\theta]
-    %         &\stmt=
-    %         -\csc(\theta) \cdot \cot(\theta)
-    %     \\
-    %     \deriv{\theta}{\sec}[\theta]
-    %         &\stmt=
-    %         \sec(\theta) \cdot \tan(\theta)
-    %     \\
-    %     \deriv{\theta}{\cot}[\theta]
-    %         &\stmt=
-    %         -\csc^2 \theta
-    %     \\
-    %     \deriv{\theta}{\arcsin}[\theta]
-    %         &\stmt=
-    %         \frac{1}{\sqrt{1-\theta^2}}
-    %     \\
-    %     \deriv{\theta}{\arccos}[\theta]
-    %         &\stmt=
-    %         \frac{-1}{\sqrt{1-\theta^2}}
-    %     \\
-    %     \deriv{\theta}{\arctan}[\theta]
-    %         &\stmt=
-    %         \frac{1}{1+\theta^2}
-    % \end{align}
+    \subsection{Derivatives of Trig Functions}
+    \begin{align}
+        \deriv{\theta}{\sin}(\theta)
+            &\stmt=
+            \cos \theta
+        \\
+        \deriv{\theta}{\cos}(\theta)
+            &\stmt=
+            -\sin \theta
+        \\
+        \deriv{\theta}{\tan}(\theta)
+            &\stmt=
+            \sec^2 \theta
+        \\
+        \deriv{\theta}{\csc}(\theta)
+            &\stmt=
+            -\csc(\theta) \cdot \cot(\theta)
+        \\
+        \deriv{\theta}{\sec}(\theta)
+            &\stmt=
+            \sec(\theta) \cdot \tan(\theta)
+        \\
+        \deriv{\theta}{\cot}(\theta)
+            &\stmt=
+            -\csc^2 \theta
+        \\
+        \deriv{\theta}{\arcsin}(\theta)
+            &\stmt=
+            \frac{1}{\sqrt{1-\theta^2}}
+        \\
+        \deriv{\theta}{\arccos}(\theta)
+            &\stmt=
+            \frac{-1}{\sqrt{1-\theta^2}}
+        \\
+        \deriv{\theta}{\arctan}(\theta)
+            &\stmt=
+            \frac{1}{1+\theta^2}
+    \end{align}
 
     % \section{Integration}
     % \begin{align}

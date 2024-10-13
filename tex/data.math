@@ -1,0 +1,15 @@
+//! title: Math
+//! author: Amy Wilder
+
+{
+    const c in Real
+    let x in Real
+    fn f()
+    fn g()
+
+    /// Reflexive
+    x = x
+
+    /// Test
+    d/dx (5*x)
+}
